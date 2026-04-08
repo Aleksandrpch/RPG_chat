@@ -4,6 +4,7 @@ import '../providers/character_provider.dart';
 import '../screens/chat_screen.dart';
 import '../screens/settings_screen.dart';
 import '../models/character.dart';
+import 'create_character_screen.dart';
 
 class CharacterSelectScreen extends StatelessWidget {
   @override
@@ -144,14 +145,15 @@ class CharacterSelectScreen extends StatelessWidget {
     if (diff.inHours > 0) return '${diff.inHours} ч. назад';
     return '${diff.inMinutes} мин. назад';
   }
-
+  
   void _createNewCharacter(BuildContext context) {
-    // TODO: открыть экран создания персонажа
-    // пока просто заглушка
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Скоро здесь будет создание персонажа')),
-    );
-  }
+  Navigator.push(
+    context,                                    // текущий контекст (где мы сейчас)
+    MaterialPageRoute(                          // анимация перехода
+      builder: (context) => const CreateCharacterScreen(),  // какой экран открыть
+    ),
+  );
+}
 
   void _confirmDelete(BuildContext context, Character character, CharacterProvider provider) {
     showDialog(
