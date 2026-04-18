@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+'''import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/chat_provider.dart';
 import '../models/message.dart';
@@ -360,3 +360,4 @@ class HomeScreen extends StatelessWidget {
     return currentModelId.split('/').last;
   }
 }
+'''

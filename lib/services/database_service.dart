@@ -56,6 +56,7 @@ class DatabaseService {
         await db.execute('''
           CREATE TABLE characters (
             id TEXT PRIMARY KEY,
+            world_id TEXT,
             name TEXT NOT NULL,
             class_type TEXT NOT NULL,
             backstory TEXT,

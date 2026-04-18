@@ -1,5 +1,6 @@
 class Character {
   final String id;
+    final String worldId;
   final String name;
   final String classType;
   final String backstory;
@@ -14,6 +15,7 @@ class Character {
   Character({
     required this.id,
     required this.name,
+    required this.worldId, 
     required this.classType,
     required this.backstory,
     this.avatarUrl,
@@ -27,6 +29,7 @@ class Character {
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'world_id': worldId,
     'name': name,
     'class_type': classType,
     'backstory': backstory,
@@ -41,6 +44,7 @@ class Character {
 
   factory Character.fromJson(Map<String, dynamic> json) => Character(
     id: json['id'] as String,
+    worldId: json['world_id'] as String, 
     name: json['name'] as String,
     classType: json['class_type'] as String,
     backstory: json['backstory'] as String,

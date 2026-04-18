@@ -1,3 +1,6 @@
+from datetime import datetime
+from services.llm.story_generator.world_gen import WorldGenerator
+
 
 @router.get("/world/{world_id}/characters")
 async def get_characters(world_id: str):
@@ -21,3 +24,27 @@ async def generate_character(
     )
     
     return new_character
+
+
+@router.post("")
+
+
+@router.post("/create_world")
+async def create_world_id(
+     character_data: dict, 
+):
+    world_id=DateTime.now().microsecondsSinceEpoch.toString()
+    try:
+        gen=WorldGenerator()
+        world_skelet=await gen(character_data)   # Сделать цикл из агентов чтобы проверять мир
+        character= world_skelet.get("main_character")
+        await db.save_world(world_id,world_skelet )
+        return {
+            "world_id": world_id,
+            "character": character
+        }
+    except: 
+        print("Ошибка в '/create_world'")
+
+@router.put("/character/update")
+async def update_character(character_id:str, character_data: dict):

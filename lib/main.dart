@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart'; 
 import 'screens/character_select_screen.dart';
 import 'providers/character_provider.dart';
 
