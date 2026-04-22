@@ -233,73 +233,42 @@ Future<void> _fillMissingFields() async {
     final api = ApiService();
     Map<String, dynamic> result;
     
-    if (_needRegenerateWorld) {
-      // Нужен новый мир (изменилась предыстория или лор)
-      result = await api.generateWorld(
-        characterdata: {
-          'name': _nameController.text,
-          'visual_style': visualStyle,
-          'visual_description': _visualDescriptionController.text,
-          'backstory': _backstoryController.text,
-          'use_lore': _useLoreBasedStory,
-          'skills': [
-            {'name': _ability1, 'description': _ability1Desc},
-            {'name': _ability2, 'description': _ability2Desc},
-          ],
-          'achievements': [
-            {'name': _achievement1, 'description': _achievement1Desc},
-            {'name': _achievement2, 'description': _achievement2Desc},
-          ],
-        },
-      );
-      _needRegenerateWorld = false;  // сбрасываем флаг
-    } else {
-      // Поменялись незначительные атрибуты, не влияющие на сюжет(имя,навыки,внешность и тд)
-      // TODO: загрузить существующий мир по worldId
-        result = await api.updateCharacter(
-          characterId: _character!.id,
-          characterdata: {
-          'name': name,
-          'visual_style': visualStyle,
-          'visual_description': _visualDescriptionController.text,
-          'backstory': _backstoryController.text,
-          'use_lore': _useLoreBasedStory,
-          'skills': [
-            {'name': _ability1, 'description': _ability1Desc},
-            {'name': _ability2, 'description': _ability2Desc},
-          ],
-          'achievements': [
-            {'name': _achievement1, 'description': _achievement1Desc},
-            {'name': _achievement2, 'description': _achievement2Desc},
-          ],
-        },
-        );
-
-    }
-    
-
-    // Извлекаем данные из ответа бекенда
-    final characterData = result['character'];
-    final worldId = result['world_id'];
-
-    final character = Character(
-      id: characterData['id'],
-      worldId: worldId,
-      name: characterData['name'] ?? name,
-      classType: visualStyle,
-      backstory: _backstoryController.text,
-      visualDescription: _visualDescriptionController.text,
-      avatarUrl: _generatedAvatarUrl.isEmpty ? null : _generatedAvatarUrl,
-      createdAt: DateTime.now(),
-      useLoreBasedStory: _useLoreBasedStory,
-      skills: [
+    final characterData = {
+      'name': _nameController.text,
+      'visual_style': visualStyle,
+      'visual_description': _visualDescriptionController.text,
+      'backstory': _backstoryController.text,
+      'use_lore': _useLoreBasedStory,
+      'skills': [
         {'name': _ability1, 'description': _ability1Desc},
         {'name': _ability2, 'description': _ability2Desc},
       ],
-      achievements: [
+      'achievements': [
         {'name': _achievement1, 'description': _achievement1Desc},
         {'name': _achievement2, 'description': _achievement2Desc},
       ],
+    };
+
+    if (_needRegenerateWorld) {
+      result = await api.generateWorld(characterData);
+      _needRegenerateWorld = false;
+    } else {
+      result = await api.updateCharacter(characterData);
+    }
+
+    final worldId = result['world_id'];
+    final character = Character(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      worldId: worldId,
+      name: characterData['name'],
+      visualStyle: characterData['visual_style'],
+      backstory: characterData['backstory'],
+      visualDescription: characterData['visual_description'],
+      avatarUrl: _generatedAvatarUrl.isEmpty ? null : _generatedAvatarUrl,
+      createdAt: DateTime.now(),
+      useLoreBasedStory: characterData['use_lore'],
+      skills: characterData['skills'],
+      achievements: characterData['achievements'],
     );
 
     await context.read<CharacterProvider>().addCharacter(character);

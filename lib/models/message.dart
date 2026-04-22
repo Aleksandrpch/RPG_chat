@@ -15,7 +15,8 @@ class ChatMessage {
   final int? tokens;
   // Стоимость запроса
   final double? cost;
-  final String? characterId; 
+  final String chatId;
+ 
  
   // Конструктор класса ChatMessage
   ChatMessage({
@@ -25,7 +26,7 @@ class ChatMessage {
     this.modelId, // Необязательный параметр: идентификатор модели
     this.tokens, // Необязательный параметр: количество токенов
     this.cost, // Необязательный параметр: стоимость запроса
-     this.characterId, //id персонажа
+    required this.chatId,
   }) : timestamp = timestamp ??
             DateTime.now(); // Установка текущего времени, если не указано
 
@@ -39,7 +40,7 @@ class ChatMessage {
       'modelId': modelId, // Идентификатор модели
       'tokens': tokens, // Количество токенов
       'cost': cost, // Стоимость запроса
-      'characterId': characterId, // id_персонажа
+      'chatId': chatId,       // id_персонажа+id_мира
   };
   }
 
@@ -56,6 +57,7 @@ class ChatMessage {
         tokens: json['tokens'] as int?, // Получение количества токенов
         cost: json['cost'] as double?, // Получение стоимости запроса
         characterId: json['characterId'] as String?,
+        chatId: json['chatId'] as String, 
       );
     } catch (e) {
       // Логирование ошибок при декодировании

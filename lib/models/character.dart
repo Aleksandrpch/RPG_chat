@@ -1,6 +1,6 @@
 class Character {
   final String id;
-    final String worldId;
+  final String worldId;
   final String name;
   final String classType;
   final String backstory;
@@ -16,10 +16,9 @@ class Character {
     required this.id,
     required this.name,
     required this.worldId, 
-    required this.classType,
     required this.backstory,
     this.avatarUrl,
-    required this.createdAt,
+    required this.visualStyle,
     required this.visualDescription,
     this.lastPlayed,
     required this.useLoreBasedStory,
@@ -31,11 +30,10 @@ class Character {
     'id': id,
     'world_id': worldId,
     'name': name,
-    'class_type': classType,
     'backstory': backstory,
     'avatar_url': avatarUrl,
-    'created_at': createdAt.toIso8601String(),
     'last_played': lastPlayed?.toIso8601String(),
+    'visual_style': visualStyle,
     'visual_description': visualDescription,
     'use_lore_based_story': useLoreBasedStory,
     'skills': skills,
@@ -43,13 +41,11 @@ class Character {
   };
 
   factory Character.fromJson(Map<String, dynamic> json) => Character(
-    id: json['id'] as String,
-    worldId: json['world_id'] as String, 
+    id: json['id'] as String, 
     name: json['name'] as String,
-    classType: json['class_type'] as String,
     backstory: json['backstory'] as String,
     avatarUrl: json['avatar_url'] as String?,
-    createdAt: DateTime.parse(json['created_at'] as String),
+    visualStyle: json['visual_style'] as String?,
     visualDescription: json['visual_description'] as String? ?? '',
     useLoreBasedStory: json['use_lore_based_story'] as bool? ?? false,
     lastPlayed: json['last_played'] != null 

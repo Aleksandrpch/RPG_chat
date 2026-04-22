@@ -45,7 +45,7 @@ class DatabaseService {
 
     // Получение пути к базе данных
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'chat_cache.db'); // Имя файла базы данных
+    final path = join(dbPath, 'characters.db'); // Имя файла базы данных
 
     // Открытие/создание базы данных
     return await openDatabase(
@@ -56,14 +56,12 @@ class DatabaseService {
         await db.execute('''
           CREATE TABLE characters (
             id TEXT PRIMARY KEY,
-            world_id TEXT,
             name TEXT NOT NULL,
             class_type TEXT NOT NULL,
             backstory TEXT,
             avatar_url TEXT,
             created_at TEXT NOT NULL,
-            last_played TEXT,
-            character_id TEXT,
+            last_played TEXT, 
           )
         ''');
       },
@@ -74,6 +72,9 @@ class DatabaseService {
   Future<void> saveMessage(ChatMessage message) async {
     try {
       final db = await database;
+      final characterId = message.isUser 
+        ? message.characterId           // сообщение игрока — свой ID
+        : 'no_character';
       // Вставка данных в таблицу messages
       await db.insert(
         'messages',
@@ -81,10 +82,11 @@ class DatabaseService {
           'content': message.content, // Текст сообщения
           'is_user': message.isUser ? 1 : 0, // Преобразование bool в int
           'timestamp': message.timestamp.toIso8601String(), // Временная метка
+          "chat_id" :message.chatId,
           'model_id': message.modelId, // Идентификатор модели
           'tokens': message.tokens, // Количество токенов
           'cost': message.cost, // Стоимость запроса
-          'character_id': message.characterId,
+          'character_id': characterId,,
         },
         conflictAlgorithm:
             ConflictAlgorithm.replace, // Стратегия при конфликтах
@@ -112,6 +114,7 @@ class DatabaseService {
           isUser: maps[i]['is_user'] == 1, // Преобразование int в bool
           timestamp:
               DateTime.parse(maps[i]['timestamp'] as String), // Временная метка
+          chat_id=maps[i]['chat_id'] as string,
           modelId: maps[i]['model_id'] as String?, // Идентификатор модели
           tokens: maps[i]['tokens'] as int?, // Количество токенов
           cost: maps[i]['cost'] as double?, // Стоимость запроса
@@ -260,4 +263,5 @@ Future<void> deleteCharacter(String id) async {
       };
     }
   }
+
 }
