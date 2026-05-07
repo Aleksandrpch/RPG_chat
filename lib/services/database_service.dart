@@ -45,28 +45,155 @@ class DatabaseService {
 
     // Получение пути к базе данных
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'characters.db'); // Имя файла базы данных
+    final path = join(dbPath, 'databases.db'); // Имя файла базы данных
 
     // Открытие/создание базы данных
     return await openDatabase(
       path,
       version: 1,
       onCreate: (Database db, int version) async {
-        // Создание таблицы messages при первом запуске
+        // Создание таблиц при первом запуске
+       
+        // Таблица characters
         await db.execute('''
           CREATE TABLE characters (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
-            class_type TEXT NOT NULL,
             backstory TEXT,
             avatar_url TEXT,
-            created_at TEXT NOT NULL,
-            last_played TEXT, 
+            visual_style TEXT,
+            visual_description TEXT
           )
         ''');
+
+        // Таблица character_skills
+        await db.execute('''
+          CREATE TABLE character_skills (
+            character_id TEXT,
+            name TEXT,
+            description TEXT,
+            PRIMARY KEY (character_id, name),
+            FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+          )
+        ''');
+
+        // Таблица character_achievements
+        await db.execute('''
+          CREATE TABLE character_achievements (
+            character_id TEXT,
+            name TEXT,
+            description TEXT,
+            earned_at TEXT,
+            PRIMARY KEY (character_id, name),
+            FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+          )
+        ''');
+         
+        // Таблица chats
+        await db.execute('''
+        id TEXT PRIMARY KEY,
+        CREATE TABLE chats(
+        character_id TEXT,
+        world_id TEXT,       
+        last_played TEXT,
+        name TEXT, 
+        FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+        )
+        ''')
+        await db.execute('''
+        CREATE TABLE messages(
+        chat_id TEXT,
+        content TEXT,
+        is_user INTEGER,    
+        timestamp TEXT, 
+        tokens INTEGER, 
+        cost REAL,
+        FOREIGN KEY (chat_id) REFERENCES chats(id)  ON DELETE CASCADE
+        )
+        ''')
       },
     );
   }
+
+
+ // ========== SKILLS ==========
+ Future<void> insertSkill(String characterId, String name, String description) async {
+  final db = await database;
+  await db.insert(
+    'character_skills',
+    {
+      'character_id': characterId,
+      'name': name,
+      'description': description,
+    },
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+ }
+ 
+
+ Future<List<Map<String, String>>> getSkills(String characterId) async {
+  final db = await database;
+  final result = await db.query(
+    'character_skills',
+    where: 'character_id = ?',
+    whereArgs: [characterId],
+  );
+  return result.map((row) => {
+    'name': row['name'] as String,
+    'description': row['description'] as String,
+  }).toList();
+ }
+ 
+
+''' Возможно пригодится потом если в игре будет возможность удаления скилла или что то такое
+  Future<void> deleteSkill(String characterId, String name) async {
+  final db = await database;
+  await db.delete(
+    'character_skills',
+    where: 'character_id = ? AND name = ?',
+    whereArgs: [characterId, name],
+  );
+ }'''
+ 
+
+ // ========== ACHIEVEMENTS ==========
+ Future<void> insertAchievement(String characterId, String name, String description) async {
+  final db = await database;
+  await db.insert(
+    'character_achievements',
+    {
+      'character_id': characterId,
+      'name': name,
+      'description': description,
+      'earned_at': DateTime.now().toIso8601String(),
+    },
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+ }
+
+Future<List<Map<String, String>>> getAchievements(String characterId) async {
+  final db = await database;
+  final result = await db.query(
+    'character_achievements',
+    where: 'character_id = ?',
+    whereArgs: [characterId],
+  );
+  return result.map((row) => {
+    'name': row['name'] as String,
+    'description': row['description'] as String,
+  }).toList();
+ }
+
+'''Аналогично со способностями может пригодиться. (репутацию можно разрушить, а серию побед прервать)
+Future<void> deleteAchievement(String characterId, String name) async {
+  final db = await database;
+  await db.delete(
+    'character_achievements',
+    where: 'character_id = ? AND name = ?',
+    whereArgs: [characterId, name],
+  );
+ }'''
+
 
   // Метод сохранения сообщения в базу данных
   Future<void> saveMessage(ChatMessage message) async {
@@ -82,11 +209,10 @@ class DatabaseService {
           'content': message.content, // Текст сообщения
           'is_user': message.isUser ? 1 : 0, // Преобразование bool в int
           'timestamp': message.timestamp.toIso8601String(), // Временная метка
-          "chat_id" :message.chatId,
+          "chat_id" :message.chatId, //id чата
           'model_id': message.modelId, // Идентификатор модели
           'tokens': message.tokens, // Количество токенов
           'cost': message.cost, // Стоимость запроса
-          'character_id': characterId,,
         },
         conflictAlgorithm:
             ConflictAlgorithm.replace, // Стратегия при конфликтах

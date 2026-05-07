@@ -50,7 +50,7 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
  @override
 void initState() {
   super.initState();
-  _loadCharacters();
+ 
   
   // Слушаем изменения предыстории
   _backstoryController.addListener(() {
@@ -137,31 +137,6 @@ Future<void> _fillMissingFields() async {
 }
 
 
-  Future<void> _loadCharacters() async {
-  await Future.delayed(const Duration(milliseconds: 500));
-  setState(() {
-    _character = Character(
-      id: '1',
-      worldId: '',
-      name: '',
-      classType: '',
-      backstory: '',
-      visualDescription: '',
-      useLoreBasedStory: true,
-      createdAt: DateTime.now(),
-      skills: [
-        {'name': 'Нажми чтобы заполнить', 'description': 'Нажми чтобы заполнить'},
-        {'name': 'Нажми чтобы заполнить', 'description': 'Нажми чтобы заполнить'},
-      ],
-      achievements: [
-        {'name': 'Нажми чтобы заполнить', 'description': 'Нажми чтобы заполнить'},
-        {'name': 'Нажми чтобы заполнить', 'description': 'Нажми чтобы заполнить'},
-      ],
-    );
-    _isLoading = false;
-    _updateUI();  
-  });
-}
 
  void _showError(String message) {
   ScaffoldMessenger.of(context).showSnackBar(
@@ -344,7 +319,7 @@ Widget build(BuildContext context) {
     ),
     body: _isGenerating
         ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(  // ← заменил Expanded + ListView на SingleChildScrollView
+        : SingleChildScrollView(  
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
