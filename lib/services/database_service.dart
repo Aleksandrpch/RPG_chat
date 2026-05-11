@@ -91,8 +91,9 @@ class DatabaseService {
          
         // Таблица chats
         await db.execute('''
-        id TEXT PRIMARY KEY,
+       
         CREATE TABLE chats(
+        id TEXT PRIMARY KEY,
         character_id TEXT,
         world_id TEXT,       
         last_played TEXT,
@@ -102,6 +103,7 @@ class DatabaseService {
         ''')
         await db.execute('''
         CREATE TABLE messages(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         chat_id TEXT,
         content TEXT,
         is_user INTEGER,    
@@ -206,11 +208,11 @@ Future<void> deleteAchievement(String characterId, String name) async {
       await db.insert(
         'messages',
         {
+          id,
           'content': message.content, // Текст сообщения
           'is_user': message.isUser ? 1 : 0, // Преобразование bool в int
           'timestamp': message.timestamp.toIso8601String(), // Временная метка
-          "chat_id" :message.chatId, //id чата
-          'model_id': message.modelId, // Идентификатор модели
+          "chat_id" :message.chat_id, //id чата
           'tokens': message.tokens, // Количество токенов
           'cost': message.cost, // Стоимость запроса
         },
@@ -232,20 +234,7 @@ Future<void> deleteAchievement(String characterId, String name) async {
         orderBy: 'timestamp ASC', // Сортировка по времени
         limit: limit, // Ограничение количества записей
       );
-
-      // Преобразование данных в объекты ChatMessage
-      return List.generate(maps.length, (i) {
-        return ChatMessage(
-          content: maps[i]['content'] as String, // Текст сообщения
-          isUser: maps[i]['is_user'] == 1, // Преобразование int в bool
-          timestamp:
-              DateTime.parse(maps[i]['timestamp'] as String), // Временная метка
-          chat_id=maps[i]['chat_id'] as string,
-          modelId: maps[i]['model_id'] as String?, // Идентификатор модели
-          tokens: maps[i]['tokens'] as int?, // Количество токенов
-          cost: maps[i]['cost'] as double?, // Стоимость запроса
-        );
-      });
+      return maps.map((row) => ChatMessage.fromJson(row)).toList();
     } catch (e) {
       debugPrint('Error getting messages: $e'); // Логирование ошибок
       return []; // Возврат пустого списка в случае ошибки
@@ -267,13 +256,12 @@ Future<void> deleteAchievement(String characterId, String name) async {
     await db.insert(
       'characters',
       {
-        'id': character.id,
-        'name': character.name,
-        'class_type': character.classType,
-        'backstory': character.backstory,
-        'avatar_url': character.avatarUrl,
-        'created_at': character.createdAt.toIso8601String(),
-        'last_played': character.lastPlayed?.toIso8601String(),
+        'id': id,
+        'name': name,
+        'backstory': backstory,
+        'avatar_url': avatarUrl,
+        'visual_style': visualStyle,
+        'visual_description': visualDescription,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -282,15 +270,15 @@ Future<void> deleteAchievement(String characterId, String name) async {
   }
 }
 
-// Получить всех персонажей
-Future<List<Character>> getCharacters() async {
+// Получить все чаты
+Future<List<Chat>> getChats() async {
   try {
     final db = await database;
     final maps = await db.query(
-      'characters',
-      orderBy: 'last_played DESC, created_at DESC',
+      'chats',
+      orderBy: 'last_played DESC',
     );
-    return maps.map((map) => Character.fromJson(map)).toList();
+    return maps.map((map) => Chat.fromJson(map)).toList();
   } catch (e) {
     debugPrint('Error getting characters: $e');
     return [];
@@ -315,14 +303,14 @@ Future<Character?> getCharacter(String id) async {
 }
 
 // Обновить время последней игры
-Future<void> updateLastPlayed(String id) async {
+Future<void> updateLastPlayed(String chat_id,) async {
   try {
     final db = await database;
     await db.update(
-      'characters',
+      'chats',
       {'last_played': DateTime.now().toIso8601String()},
       where: 'id = ?',
-      whereArgs: [id],
+      whereArgs: [chat_id],
     );
   } catch (e) {
     debugPrint('Error updating last played: $e');
@@ -337,57 +325,5 @@ Future<void> deleteCharacter(String id) async {
   } catch (e) {
     debugPrint('Error deleting character: $e');
   }
-}
-  // Метод получения статистики по сообщениям
-  Future<Map<String, dynamic>> getStatistics() async {
-    try {
-      final db = await database;
-
-      // Получение общего количества сообщений
-      final totalMessagesResult =
-          await db.rawQuery('SELECT COUNT(*) as count FROM messages');
-      final totalMessages = Sqflite.firstIntValue(totalMessagesResult) ?? 0;
-
-      // Получение общего количества токенов
-      final totalTokensResult = await db.rawQuery(
-          'SELECT SUM(tokens) as total FROM messages WHERE tokens IS NOT NULL');
-      final totalTokens = Sqflite.firstIntValue(totalTokensResult) ?? 0;
-
-      // Получение статистики использования моделей
-      final modelStats = await db.rawQuery('''
-        SELECT 
-          model_id,
-          COUNT(*) as message_count,
-          SUM(tokens) as total_tokens
-        FROM messages 
-        WHERE model_id IS NOT NULL 
-        GROUP BY model_id
-      ''');
-
-      // Формирование данных по использованию моделей
-      final modelUsage = <String, Map<String, int>>{};
-      for (final stat in modelStats) {
-        final modelId = stat['model_id'] as String;
-        modelUsage[modelId] = {
-          'count': stat['message_count'] as int, // Количество сообщений
-          'tokens':
-              stat['total_tokens'] as int? ?? 0, // Общее количество токенов
-        };
-      }
-
-      return {
-        'total_messages': totalMessages, // Общее количество сообщений
-        'total_tokens': totalTokens, // Общее количество токенов
-        'model_usage': modelUsage, // Статистика по моделям
-      };
-    } catch (e) {
-      debugPrint('Error getting statistics: $e'); // Логирование ошибок
-      return {
-        'total_messages': 0,
-        'total_tokens': 0,
-        'model_usage': {},
-      };
-    }
-  }
-
+} 
 }

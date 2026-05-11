@@ -3,73 +3,48 @@ import 'package:flutter/foundation.dart';
 
 // Класс, представляющий сообщение в чате
 class ChatMessage {
-  // Текст сообщения
   final String content;
-  // Флаг, указывающий, является ли сообщение от пользователя
   final bool isUser;
-  // Временная метка сообщения
   final DateTime timestamp;
-  // Идентификатор модели, использованной для генерации ответа
   final String? modelId;
-  // Количество использованных токенов
   final int? tokens;
-  // Стоимость запроса
   final double? cost;
-  final String chatId;
- 
- 
-  // Конструктор класса ChatMessage
+  final String chat_id;  
+  
   ChatMessage({
-    required this.content, // Обязательный параметр: текст сообщения
-    required this.isUser, // Обязательный параметр: флаг пользователя
-    DateTime? timestamp, // Необязательный параметр: временная метка
-    this.modelId, // Необязательный параметр: идентификатор модели
-    this.tokens, // Необязательный параметр: количество токенов
-    this.cost, // Необязательный параметр: стоимость запроса
-    required this.chatId,
-  }) : timestamp = timestamp ??
-            DateTime.now(); // Установка текущего времени, если не указано
+    required this.content,
+    required this.isUser,
+    DateTime? timestamp,
+    this.modelId,
+    this.tokens,
+    this.cost,
+    required this.chat_id,
+  }) : timestamp = timestamp ?? DateTime.now();
 
-  // Преобразование объекта в JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'content': content, // Текст сообщения
-      'isUser': isUser, // Флаг пользователя
-      'timestamp':
-          timestamp.toIso8601String(), // Временная метка в формате ISO 8601
-      'modelId': modelId, // Идентификатор модели
-      'tokens': tokens, // Количество токенов
-      'cost': cost, // Стоимость запроса
-      'chatId': chatId,       // id_персонажа+id_мира
+  Map<String, dynamic> toJson() => {
+    'content': content,
+    'is_user': isUser ? 1 : 0,           // ← исправлено
+    'timestamp': timestamp.toIso8601String(),
+    'model_id': modelId,                  // ← исправлено
+    'tokens': tokens,
+    'cost': cost,
+    'chat_id': chat_id,
   };
-  }
 
-  // Фабричный метод для создания объекта из JSON
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     try {
-      // Создание объекта ChatMessage из JSON
-      return ChatMessage(
-        content: json['content'] as String, // Получение текста сообщения
-        isUser: json['isUser'] as bool, // Получение флага пользователя
-        timestamp: DateTime.parse(
-            json['timestamp'] as String), // Парсинг временной метки
-        modelId: json['modelId'] as String?, // Получение идентификатора модели
-        tokens: json['tokens'] as int?, // Получение количества токенов
-        cost: json['cost'] as double?, // Получение стоимости запроса
-        characterId: json['characterId'] as String?,
-        chatId: json['chatId'] as String, 
-      );
-    } catch (e) {
-      // Логирование ошибок при декодировании
-      debugPrint('Error decoding message: $e');
-      // Возвращение объекта с теми же данными, даже если произошла ошибка
       return ChatMessage(
         content: json['content'] as String,
-        isUser: json['isUser'] as bool,
+        isUser: (json['is_user'] as int) == 1,  // ← исправлено
         timestamp: DateTime.parse(json['timestamp'] as String),
-        modelId: json['modelId'] as String?,
+        modelId: json['model_id'] as String?,   // ← исправлено
         tokens: json['tokens'] as int?,
+        cost: (json['cost'] as num?)?.toDouble(),
+        chat_id: json['chat_id'] as String,
       );
+    } catch (e) {
+      debugPrint('Error decoding message: $e');
+      rethrow;
     }
   }
 

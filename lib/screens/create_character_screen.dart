@@ -16,9 +16,7 @@ class CreateCharacterScreen extends StatefulWidget {
 class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
   
   
-  bool _isLoading = false;
-  
-  Character? _character;     
+   
   int _selectedStyleIndex = 0;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _backstoryController = TextEditingController();
@@ -36,6 +34,7 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
   String _achievement2Desc = '';
   bool _useLoreBasedStory = false;
   bool _need_regenerate_world = false;
+  bool _isNewCharacter = true;
 
   final List<Map<String, String>> _visualStyles = [
     {'name': 'Аниме', 'icon': '🎌', 'prompt': 'anime style...'},
@@ -145,29 +144,7 @@ Future<void> _fillMissingFields() async {
   }
 
  
- void _updateUI() {
-  if (_character == null) return;
-  _backstoryController.text = _character!.backstory;
-  
-  if (_character!.skills.isNotEmpty) {
-    _ability1 = _character!.skills[0]['name'] ?? 'Навык 1';
-    _ability1Desc = _character!.skills[0]['description'] ?? 'Описание';
-    if (_character!.skills.length > 1) {
-      _ability2 = _character!.skills[1]['name'] ?? 'Навык 2';
-      _ability2Desc = _character!.skills[1]['description'] ?? 'Описание';
-    }
-  }
-  
-  if (_character!.achievements.isNotEmpty) {
-    _achievement1 = _character!.achievements[0]['name'] ?? 'Достижение 1';
-    _achievement1Desc = _character!.achievements[0]['description'] ?? 'Описание';
-    if (_character!.achievements.length > 1) {
-      _achievement2 = _character!.achievements[1]['name'] ?? 'Достижение 2';
-      _achievement2Desc = _character!.achievements[1]['description'] ?? 'Описание';
-    }
-  }
-  setState(() {});
-}
+
 
   Future<void> _generateAvatar() async {
     setState(() => _isGenerating = true);
@@ -296,7 +273,7 @@ Widget _buildStyleChip({
 }
  @override
 Widget build(BuildContext context) {
-  if (_isLoading) {
+  if (_isGenerating) {
     return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 
@@ -629,15 +606,7 @@ Widget build(BuildContext context) {
   );
 }
 
-  Widget _buildAbilityRow({
-    required TextEditingController nameController,
-    required TextEditingController descController,
-    required Function(String) onNameChanged,
-    required Function(String) onDescChanged,
-    required String nameHint,
-    required String descHint,
-    required BuildContext context,
-  }) {
+  {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
