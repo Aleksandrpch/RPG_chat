@@ -21,6 +21,7 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _backstoryController = TextEditingController();
   final TextEditingController _visualDescriptionController = TextEditingController();
+  final TextEditingController _customStyleController = TextEditingController();
   bool _isCustomMode = false;
   bool _isGenerating = false;
   String _generatedAvatarUrl = '';
@@ -33,8 +34,7 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
   String _achievement2 = '';
   String _achievement2Desc = '';
   bool _useLoreBasedStory = false;
-  bool _need_regenerate_world = false;
-  bool _isNewCharacter = true;
+  bool _needRegenerateWorld = true;
 
   final List<Map<String, String>> _visualStyles = [
     {'name': 'Аниме', 'icon': '🎌', 'prompt': 'anime style...'},
@@ -72,7 +72,7 @@ Future<void> _fillMissingFields() async {
     final result = await api.generateWorld(
       characterTemplate: {
         'name': name.isEmpty ? null : name,
-        'visual_style': visualStyle,
+        'visual_style':  final visualStyle = _isCustomMode ? _customStyleController.text.trim() : _visualStyles[_selectedStyleIndex]['name']!;,
         'visual_description': _visualDescriptionController.text,
         'backstory': _backstoryController.text,
         'use_lore': _useLoreBasedStory,
@@ -89,7 +89,7 @@ Future<void> _fillMissingFields() async {
 
     final characterData = result['character'];
     
-    // Только заполняем поля, НЕ сохраняем
+    // Сгенерировали мир сорханили в бд и заполняем поля
     setState(() {
       if (name.isEmpty && characterData['name'] != null) {
         _nameController.text = characterData['name'];
@@ -121,6 +121,7 @@ Future<void> _fillMissingFields() async {
           _achievement2Desc = characterData['achievements'][1]['description'];
         }
       }
+      _needRegenerateWorld=false;
     });
 
     if (mounted) {
@@ -187,7 +188,7 @@ Future<void> _fillMissingFields() async {
     
     final characterData = {
       'name': _nameController.text,
-      'visual_style': visualStyle,
+      'visual_style': final visualStyle = _isCustomMode ? _customStyleController.text.trim() : _visualStyles[_selectedStyleIndex]['name']!;,
       'visual_description': _visualDescriptionController.text,
       'backstory': _backstoryController.text,
       'use_lore': _useLoreBasedStory,
@@ -203,9 +204,9 @@ Future<void> _fillMissingFields() async {
 
     if (_needRegenerateWorld) {
       result = await api.generateWorld(characterData);
-      _needRegenerateWorld = false;
     } else {
       result = await api.updateCharacter(characterData);
+      _needRegenerateWorld = true;
     }
 
     final worldId = result['world_id'];
@@ -302,7 +303,7 @@ Widget build(BuildContext context) {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ElevatedButton(
-                  onPressed: _regenerateCharacter,  
+                  onPressed: _fillMissingFields,  
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: const Color(0xFFFBBF24),
@@ -374,6 +375,18 @@ Widget build(BuildContext context) {
                     );
                   }),
                 ),
+                if (_isCustomMode) ...[
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _customStyleController,
+                          style: const TextStyle(color: Color(0xFFE6EDF3)),
+                          decoration: const InputDecoration(
+                            hintText: 'Введите свой стиль (например: "стимпанк, грубый рисунок")',
+                            hintStyle: TextStyle(color: Color(0xFF8B949E)),
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ],
                 const SizedBox(height: 24),
                 const Text('📝 ИМЯ ПЕРСОНАЖА', style: TextStyle(color: Color(0xFFFBBF24),fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
