@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../widgets/design_colors.dart';
 
 // 1. Кнопка "Дополнить пустые поля"
 class FillMissingButton extends StatelessWidget {
@@ -10,7 +10,14 @@ class FillMissingButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: onPressed,
-      style: AppTheme.primaryButtonStyle,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        backgroundColor: AppTheme.primary,
+        foregroundColor: AppTheme.background,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
       child: const Text('🎲 Дополнить пустые поля'),
     );
   }
@@ -34,7 +41,10 @@ class AvatarWidget extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: 200,
-        decoration: AppTheme.avatarDecoration(avatarUrl.isNotEmpty).copyWith(
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.primary, width: 2),
           image: avatarUrl.isNotEmpty
               ? DecorationImage(
                   image: NetworkImage(avatarUrl),
@@ -51,7 +61,7 @@ class AvatarWidget extends StatelessWidget {
                   Text(
                     'Нажми, чтобы сгенерировать аватар\n(стиль: $styleName)',
                     textAlign: TextAlign.center,
-                    style: AppTheme.hint.copyWith(fontSize: 12),
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                   ),
                 ],
               )
@@ -69,75 +79,26 @@ class VisualDescriptionField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: AppTheme.cardDecoration,
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: TextField(
         controller: controller,
         maxLines: 4,
-        style: AppTheme.body,
-        decoration: AppTheme.inputDecoration(
+        style: TextStyle(color: AppTheme.textPrimary),
+        decoration: InputDecoration(
           hintText: 'Опиши внешность персонажа...',
-          isMultiline: true,
+          hintStyle: TextStyle(color: AppTheme.textSecondary),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(16),
         ),
       ),
     );
   }
 }
 
-// 4. Выбор стиля
-class StyleSelector extends StatelessWidget {
-  final List<Map<String, String>> styles;
-  final int selectedIndex;
-  final bool isCustomMode;
-  final Function(int) onStyleSelected;
-  final Function(String) onStyleChipPressed;
-
-  const StyleSelector({
-    super.key,
-    required this.styles,
-    required this.selectedIndex,
-    required this.isCustomMode,
-    required this.onStyleSelected,
-    required this.onStyleChipPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: List.generate(styles.length, (index) {
-        final style = styles[index];
-        final isSelected = !isCustomMode && selectedIndex == index;
-        return FilterChip(
-          label: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(style['icon']!, style: const TextStyle(fontSize: 16)),
-              const SizedBox(width: 6),
-              Text(
-                style['name']!,
-                style: TextStyle(
-                  color: isSelected ? AppTheme.background : AppTheme.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          selected: isSelected,
-          onSelected: (_) => onStyleChipPressed(style['name']!),
-          backgroundColor: AppTheme.surface,
-          selectedColor: AppTheme.primary,
-          shape: StadiumBorder(
-            side: BorderSide(
-              color: isSelected ? AppTheme.primary : AppTheme.divider,
-            ),
-          ),
-        );
-      }),
-    );
-  }
-}
-
-// 5. Кастомный стиль
+// 4. Кастомный стиль
 class CustomStyleInput extends StatelessWidget {
   final TextEditingController controller;
   const CustomStyleInput({super.key, required this.controller});
@@ -146,15 +107,17 @@ class CustomStyleInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
-      style: AppTheme.body,
-      decoration: AppTheme.inputDecoration(
+      style: TextStyle(color: AppTheme.textPrimary),
+      decoration: InputDecoration(
         hintText: 'Введите свой стиль (например: "стимпанк, грубый рисунок")',
+        hintStyle: TextStyle(color: AppTheme.textSecondary),
+        border: OutlineInputBorder(),
       ),
     );
   }
 }
 
-// 6. Имя персонажа
+// 5. Имя персонажа
 class CharacterNameField extends StatelessWidget {
   final TextEditingController controller;
   const CharacterNameField({super.key, required this.controller});
@@ -163,13 +126,17 @@ class CharacterNameField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
-      style: AppTheme.body,
-      decoration: AppTheme.inputDecoration(hintText: 'Введите имя персонажа'),
+      style: TextStyle(color: AppTheme.textPrimary),
+      decoration: InputDecoration(
+        hintText: 'Введите имя персонажа',
+        hintStyle: TextStyle(color: AppTheme.textSecondary),
+        border: OutlineInputBorder(),
+      ),
     );
   }
 }
 
-// 7. Предыстория
+// 6. Предыстория
 class BackstoryField extends StatelessWidget {
   final TextEditingController controller;
   const BackstoryField({super.key, required this.controller});
@@ -177,21 +144,26 @@ class BackstoryField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: AppTheme.cardDecoration,
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: TextField(
         controller: controller,
         maxLines: 5,
-        style: AppTheme.body,
-        decoration: AppTheme.inputDecoration(
+        style: TextStyle(color: AppTheme.textPrimary),
+        decoration: InputDecoration(
           hintText: 'Напиши предысторию персонажа...',
-          isMultiline: true,
+          hintStyle: TextStyle(color: AppTheme.textSecondary),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(16),
         ),
       ),
     );
   }
 }
 
-// 8. Чекбокс "Сюжет на основе лора"
+// 7. Чекбокс "Сюжет на основе лора"
 class LoreCheckbox extends StatelessWidget {
   final bool value;
   final ValueChanged<bool?> onChanged;
@@ -206,10 +178,10 @@ class LoreCheckbox extends StatelessWidget {
           onChanged: onChanged,
           activeColor: AppTheme.primary,
         ),
-        const Expanded(
+        Expanded(
           child: Text(
             'Сюжет на основе лора персонажа',
-            style: AppTheme.body,
+            style: TextStyle(color: AppTheme.textPrimary),
           ),
         ),
       ],
@@ -217,7 +189,7 @@ class LoreCheckbox extends StatelessWidget {
   }
 }
 
-// 9. Блок способностей
+// 8. Блок способностей
 class SkillsSection extends StatelessWidget {
   final String ability1;
   final String ability1Desc;
@@ -246,7 +218,10 @@ class SkillsSection extends StatelessWidget {
       children: [
         const SizedBox(height: 8),
         Container(
-          decoration: AppTheme.cardDecoration,
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(16),
+          ),
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
@@ -257,7 +232,7 @@ class SkillsSection extends StatelessWidget {
                 onDescChanged: onAbility1DescChanged,
               ),
               const SizedBox(height: 16),
-              const Divider(color: AppTheme.divider),
+              Divider(color: AppTheme.divider),
               const SizedBox(height: 16),
               _buildSkillRow(
                 name: ability2,
@@ -282,32 +257,46 @@ class SkillsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: TextField(
-            controller: TextEditingController(text: name)..addListener(() => onNameChanged(name)),
-            style: AppTheme.body,
-            maxLines: null,
-            decoration: const InputDecoration(
-              labelText: 'Название',
-              labelStyle: AppTheme.hint,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Название', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+              const SizedBox(height: 4),
+              TextField(
+                controller: TextEditingController(text: name)..addListener(() => onNameChanged(name)),
+                style: TextStyle(color: AppTheme.textPrimary),
+                maxLines: null,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: TextField(
-            controller: TextEditingController(text: desc)..addListener(() => onDescChanged(desc)),
-            style: AppTheme.body,
-            maxLines: null,
-            decoration: const InputDecoration(
-              labelText: 'Описание',
-              labelStyle: AppTheme.hint,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Описание', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+              const SizedBox(height: 4),
+              TextField(
+                controller: TextEditingController(text: desc)..addListener(() => onDescChanged(desc)),
+                style: TextStyle(color: AppTheme.textPrimary),
+                maxLines: null,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -315,7 +304,7 @@ class SkillsSection extends StatelessWidget {
   }
 }
 
-// 10. Блок достижений
+// 9. Блок достижений
 class AchievementsSection extends StatelessWidget {
   final String achievement1;
   final String achievement1Desc;
@@ -344,7 +333,10 @@ class AchievementsSection extends StatelessWidget {
       children: [
         const SizedBox(height: 8),
         Container(
-          decoration: AppTheme.cardDecoration,
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(16),
+          ),
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
@@ -355,7 +347,7 @@ class AchievementsSection extends StatelessWidget {
                 onDescChanged: onAchievement1DescChanged,
               ),
               const SizedBox(height: 16),
-              const Divider(color: AppTheme.divider),
+              Divider(color: AppTheme.divider),
               const SizedBox(height: 16),
               _buildAchievementRow(
                 name: achievement2,
@@ -380,32 +372,46 @@ class AchievementsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: TextField(
-            controller: TextEditingController(text: name)..addListener(() => onNameChanged(name)),
-            style: AppTheme.body,
-            maxLines: null,
-            decoration: const InputDecoration(
-              labelText: 'Название',
-              labelStyle: AppTheme.hint,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Название', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+              const SizedBox(height: 4),
+              TextField(
+                controller: TextEditingController(text: name)..addListener(() => onNameChanged(name)),
+                style: TextStyle(color: AppTheme.textPrimary),
+                maxLines: null,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: TextField(
-            controller: TextEditingController(text: desc)..addListener(() => onDescChanged(desc)),
-            style: AppTheme.body,
-            maxLines: null,
-            decoration: const InputDecoration(
-              labelText: 'Описание',
-              labelStyle: AppTheme.hint,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Описание', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+              const SizedBox(height: 4),
+              TextField(
+                controller: TextEditingController(text: desc)..addListener(() => onDescChanged(desc)),
+                style: TextStyle(color: AppTheme.textPrimary),
+                maxLines: null,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -413,7 +419,7 @@ class AchievementsSection extends StatelessWidget {
   }
 }
 
-// 11. Кнопка "Создать персонажа"
+// 10. Кнопка "Создать персонажа"
 class CreateCharacterButton extends StatelessWidget {
   final VoidCallback onPressed;
   const CreateCharacterButton({super.key, required this.onPressed});
@@ -422,7 +428,14 @@ class CreateCharacterButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: onPressed,
-      style: AppTheme.primaryButtonStyle,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        backgroundColor: AppTheme.primary,
+        foregroundColor: AppTheme.background,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
       child: const Text('Создать персонажа'),
     );
   }
