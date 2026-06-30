@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 class Skill {
   final String name;
   final String description;

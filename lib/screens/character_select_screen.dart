@@ -130,15 +130,7 @@ class CharacterSelectScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                character.classType,
-                                style: const TextStyle(color: Colors.amber, fontSize: 14),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatLastPlayed(character.lastPlayed),
-                                style: const TextStyle(color: Colors.grey, fontSize: 12),
-                              ),
+            
                             ],
                           ),
                         ),

@@ -1,46 +1,55 @@
-// Импорт основных классов Flutter
 import 'package:flutter/foundation.dart';
-
-// Класс, представляющий сообщение в чате
 class ChatMessage {
   final String content;
-  final bool isUser;
+
+  final String senderId;
+  final String senderName;
+  final String? senderAvatarUrl;
+
   final DateTime timestamp;
+
   final String? modelId;
   final int? tokens;
   final double? cost;
-  final String chat_id;  
-  
+
+  final String chatId;
+
   ChatMessage({
     required this.content,
-    required this.isUser,
+    required this.senderId,
+    required this.senderName,
+    this.senderAvatarUrl,
     DateTime? timestamp,
     this.modelId,
     this.tokens,
     this.cost,
-    required this.chat_id,
+    required this.chatId,
   }) : timestamp = timestamp ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
-    'content': content,
-    'is_user': isUser ? 1 : 0,           // ← исправлено
-    'timestamp': timestamp.toIso8601String(),
-    'model_id': modelId,                  // ← исправлено
-    'tokens': tokens,
-    'cost': cost,
-    'chat_id': chat_id,
-  };
+        'content': content,
+        'sender_id': senderId,
+        'sender_name': senderName,
+        'sender_avatar_url': senderAvatarUrl,
+        'timestamp': timestamp.toIso8601String(),
+        'model_id': modelId,
+        'tokens': tokens,
+        'cost': cost,
+        'chat_id': chatId,
+      };
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     try {
       return ChatMessage(
         content: json['content'] as String,
-        isUser: (json['is_user'] as int) == 1,  // ← исправлено
+        senderId: json['sender_id'] as String,
+        senderName: json['sender_name'] as String,
+        senderAvatarUrl: json['sender_avatar_url'] as String?,
         timestamp: DateTime.parse(json['timestamp'] as String),
-        modelId: json['model_id'] as String?,   // ← исправлено
+        modelId: json['model_id'] as String?,
         tokens: json['tokens'] as int?,
         cost: (json['cost'] as num?)?.toDouble(),
-        chat_id: json['chat_id'] as String,
+        chatId: json['chat_id'] as String,
       );
     } catch (e) {
       debugPrint('Error decoding message: $e');
@@ -48,16 +57,20 @@ class ChatMessage {
     }
   }
 
-  // Геттер для получения очищенного текста сообщения
   String get cleanContent {
     try {
-      // Удаление лишних пробелов в начале и конце текста
       return content.trim();
     } catch (e) {
-      // Логирование ошибок при очистке текста
       debugPrint('Error cleaning message content: $e');
-      // Возвращение исходного текста в случае ошибки
       return content;
     }
   }
+
+  bool get isPlayer => senderId == 'player';
+
+  bool get isNarrator => senderId == 'narrator';
+
+  bool get isNpc =>
+      senderId != 'player' &&
+      senderId != 'narrator';
 }

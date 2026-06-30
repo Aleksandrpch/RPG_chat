@@ -12,7 +12,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart' if (dart.library.html) '';
 import '../models/message.dart';
 // Импорт модели персонажа
 import '../models/character.dart';
-
+// Импорт модели чата
+import '../models/chat.dart';
 // Класс сервиса для работы с базой данных
 class DatabaseService {
   // Единственный экземпляр класса (Singleton)
@@ -100,19 +101,21 @@ class DatabaseService {
         name TEXT, 
         FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
         )
-        ''')
+        ''');
         await db.execute('''
         CREATE TABLE messages(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender_id TEXT
+        sender_name TEXT
+        sender_avatar_url TEXT
         chat_id TEXT,
-        content TEXT,
-        is_user INTEGER,    
+        content TEXT,    
         timestamp TEXT, 
         tokens INTEGER, 
         cost REAL,
         FOREIGN KEY (chat_id) REFERENCES chats(id)  ON DELETE CASCADE
         )
-        ''')
+        ''');
       },
     );
   }
@@ -147,7 +150,7 @@ class DatabaseService {
  }
  
 
-''' Возможно пригодится потом если в игре будет возможность удаления скилла или что то такое
+/* Возможно пригодится потом если в игре будет возможность удаления скилла или что то такое
   Future<void> deleteSkill(String characterId, String name) async {
   final db = await database;
   await db.delete(
@@ -155,7 +158,7 @@ class DatabaseService {
     where: 'character_id = ? AND name = ?',
     whereArgs: [characterId, name],
   );
- }'''
+ }*/
  
 
  // ========== ACHIEVEMENTS ==========
@@ -186,7 +189,7 @@ Future<List<Map<String, String>>> getAchievements(String characterId) async {
   }).toList();
  }
 
-'''Аналогично со способностями может пригодиться. (репутацию можно разрушить, а серию побед прервать)
+/*Аналогично со способностями может пригодиться. (репутацию можно разрушить, а серию побед прервать)
 Future<void> deleteAchievement(String characterId, String name) async {
   final db = await database;
   await db.delete(
@@ -194,25 +197,23 @@ Future<void> deleteAchievement(String characterId, String name) async {
     where: 'character_id = ? AND name = ?',
     whereArgs: [characterId, name],
   );
- }'''
+ }*/
 
 
   // Метод сохранения сообщения в базу данных
   Future<void> saveMessage(ChatMessage message) async {
     try {
       final db = await database;
-      final characterId = message.isUser 
-        ? message.characterId           // сообщение игрока — свой ID
-        : 'no_character';
       // Вставка данных в таблицу messages
       await db.insert(
         'messages',
         {
-          id,
           'content': message.content, // Текст сообщения
-          'is_user': message.isUser ? 1 : 0, // Преобразование bool в int
+          'sender_id': message.senderId,
+          'sender_name': message.senderName,
+          'sender_avatar_url': message.senderAvatarUrl,
           'timestamp': message.timestamp.toIso8601String(), // Временная метка
-          "chat_id" :message.chat_id, //id чата
+          'chat_id' :message.chatId, //id чата
           'tokens': message.tokens, // Количество токенов
           'cost': message.cost, // Стоимость запроса
         },
@@ -256,12 +257,12 @@ Future<void> deleteAchievement(String characterId, String name) async {
     await db.insert(
       'characters',
       {
-        'id': id,
-        'name': name,
-        'backstory': backstory,
-        'avatar_url': avatarUrl,
-        'visual_style': visualStyle,
-        'visual_description': visualDescription,
+        'id': character.id,
+        'name': character.name,
+        'backstory': character.backstory,
+        'avatar_url':character.avatarUrl,
+        'visual_style': character.visualStyle,
+        'visual_description': character.visualDescription,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -317,13 +318,25 @@ Future<void> updateLastPlayed(String chat_id,) async {
   }
 }
 
-// Удалить персонажа
-Future<void> deleteCharacter(String id) async {
+  // Удалить персонажа
+  Future<void> deleteCharacter(String id) async {
+    try {
+      final db = await database;
+      await db.delete('characters', where: 'id = ?', whereArgs: [id]);
+    } catch (e) {
+      debugPrint('Error deleting character: $e');
+    }
+    } 
+
+
+  Future<List<Character>> getCharacters() async {
   try {
     final db = await database;
-    await db.delete('characters', where: 'id = ?', whereArgs: [id]);
-  } catch (e) {
-    debugPrint('Error deleting character: $e');
+    final maps = await db.query('characters');
+    return maps.map((map) => Character.fromJson(map)).toList();
+    } catch (e) {
+    debugPrint('Error getting characters: $e');
+    return [];
+    } 
   }
-} 
 }

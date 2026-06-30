@@ -6,7 +6,8 @@ class ApiService {
 
   Future<Map<String, dynamic>> generateWorld({
     required Map<String, dynamic> characterTemplate,
-  }) async {
+    }) 
+    async {
     final response = await http.post(
       Uri.parse('$baseUrl/create_world'),
       headers: {'Content-Type': 'application/json'},
@@ -36,20 +37,4 @@ class ApiService {
     }
   }
   
-
-  Future<Map<String, dynamic>> updateCharacter({
-    required Map<String, dynamic> characterTemplate,
-  }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl//character/update'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(characterTemplate),
-    );
-    
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to generate world: ${response.body}');
-    }
-  }
 }

@@ -4,6 +4,8 @@ import '../services/api_service.dart';
 import '../providers/character_provider.dart';
 import 'character_select_screen.dart';
 import 'package:provider/provider.dart';
+import '../widgets/character_form_widgets.dart';
+import '../models/chat.dart';
 
 
 class CreateCharacterScreen extends StatefulWidget {
@@ -46,95 +48,96 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
 
  
 
- @override
-void initState() {
+ 
+
+  @override
+  void initState() {
   super.initState();
  
-  
   // Слушаем изменения предыстории
   _backstoryController.addListener(() {
     if (_needRegenerateWorld == false) {
       setState(() => _needRegenerateWorld = true);
     }
   });
-}
+  }
 
  
-Future<void> _fillMissingFields() async {
-  final name = _nameController.text.trim();
-  
-  setState(() => _isGenerating = true);
-
-  try {
-    final visualStyle = _visualStyles[_selectedStyleIndex]['name']!;
-
-    final api = ApiService();
-    final result = await api.generateWorld(
-      characterTemplate: {
-        'name': name.isEmpty ? null : name,
-        'visual_style':  final visualStyle = _isCustomMode ? _customStyleController.text.trim() : _visualStyles[_selectedStyleIndex]['name']!;,
-        'visual_description': _visualDescriptionController.text,
-        'backstory': _backstoryController.text,
-        'use_lore': _useLoreBasedStory,
-        'skills': [
-          {'name': _ability1, 'description': _ability1Desc},
-          {'name': _ability2, 'description': _ability2Desc},
-        ],
-        'achievements': [
-          {'name': _achievement1, 'description': _achievement1Desc},
-          {'name': _achievement2, 'description': _achievement2Desc},
-        ],
-      },
-    );
-
-    final characterData = result['character'];
+  Future<void> _fillMissingFields() async {
+    final name = _nameController.text.trim();
     
-    // Сгенерировали мир сорханили в бд и заполняем поля
-    setState(() {
-      if (name.isEmpty && characterData['name'] != null) {
-        _nameController.text = characterData['name'];
-      }
-      if (_backstoryController.text.isEmpty && characterData['backstory'] != null) {
-        _backstoryController.text = characterData['backstory'];
-      }
-      if (_visualDescriptionController.text.isEmpty && characterData['visual_description'] != null) {
-        _visualDescriptionController.text = characterData['visual_description'];
-      }
-      if (_generatedAvatarUrl.isEmpty && characterData['avatar_url'] != null) {
-        _generatedAvatarUrl = characterData['avatar_url'];
-      }
-      
-      if (characterData['skills'] != null && characterData['skills'].isNotEmpty) {
-        _ability1 = characterData['skills'][0]['name'];
-        _ability1Desc = characterData['skills'][0]['description'];
-        if (characterData['skills'].length > 1) {
-          _ability2 = characterData['skills'][1]['name'];
-          _ability2Desc = characterData['skills'][1]['description'];
-        }
-      }
-      
-      if (characterData['achievements'] != null && characterData['achievements'].isNotEmpty) {
-        _achievement1 = characterData['achievements'][0]['name'];
-        _achievement1Desc = characterData['achievements'][0]['description'];
-        if (characterData['achievements'].length > 1) {
-          _achievement2 = characterData['achievements'][1]['name'];
-          _achievement2Desc = characterData['achievements'][1]['description'];
-        }
-      }
-      _needRegenerateWorld=false;
-    });
+    setState(() => _isGenerating = true);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Пустые поля заполнены!')),
+    try {
+      final visualStyle = _isCustomMode ? _customStyleController.text.trim() : _visualStyles[_selectedStyleIndex]['name']!;
+
+      final api = ApiService();
+      final result = await api.generateWorld(
+        characterTemplate: {
+          'name': name.isEmpty ? null : name,
+          'visual_style':  visualStyle,
+          'visual_description': _visualDescriptionController.text,
+          'backstory': _backstoryController.text,
+          'use_lore': _useLoreBasedStory,
+          'skills': [
+            {'name': _ability1, 'description': _ability1Desc},
+            {'name': _ability2, 'description': _ability2Desc},
+          ],
+          'achievements': [
+            {'name': _achievement1, 'description': _achievement1Desc},
+            {'name': _achievement2, 'description': _achievement2Desc},
+          ],
+        },
       );
+
+      final characterData = result['character'];
+      
+      // Сгенерировали мир сорханили в бд и заполняем поля
+      setState(() {
+        if (name.isEmpty && characterData['name'] != null) {
+          _nameController.text = characterData['name'];
+        }
+        if (_backstoryController.text.isEmpty && characterData['backstory'] != null) {
+          _backstoryController.text = characterData['backstory'];
+        }
+        if (_visualDescriptionController.text.isEmpty && characterData['visual_description'] != null) {
+          _visualDescriptionController.text = characterData['visual_description'];
+        }
+        if (_generatedAvatarUrl.isEmpty && characterData['avatar_url'] != null) {
+          _generatedAvatarUrl = characterData['avatar_url'];
+        }
+        
+        if (characterData['skills'] != null && characterData['skills'].isNotEmpty) {
+          _ability1 = characterData['skills'][0]['name'];
+          _ability1Desc = characterData['skills'][0]['description'];
+          if (characterData['skills'].length > 1) {
+            _ability2 = characterData['skills'][1]['name'];
+            _ability2Desc = characterData['skills'][1]['description'];
+          }
+        }
+        
+        if (characterData['achievements'] != null && characterData['achievements'].isNotEmpty) {
+          _achievement1 = characterData['achievements'][0]['name'];
+          _achievement1Desc = characterData['achievements'][0]['description'];
+          if (characterData['achievements'].length > 1) {
+            _achievement2 = characterData['achievements'][1]['name'];
+            _achievement2Desc = characterData['achievements'][1]['description'];
+          }
+        }
+        _needRegenerateWorld=false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Пустые поля заполнены!')),
+        );
+      }
+    } catch (e) {
+      _showError(e.toString());
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
     }
-  } catch (e) {
-    _showError(e.toString());
-  } finally {
-    if (mounted) setState(() => _isGenerating = false);
   }
-}
 
 
 
@@ -145,8 +148,6 @@ Future<void> _fillMissingFields() async {
   }
 
  
-
-
   Future<void> _generateAvatar() async {
     setState(() => _isGenerating = true);
     await Future.delayed(const Duration(seconds: 2));
@@ -158,91 +159,88 @@ Future<void> _fillMissingFields() async {
   
 
   void _regenerateCharacter() {
-  setState(() {
+    setState(() {
     _generatedAvatarUrl = '';
     _selectedStyleIndex = (_selectedStyleIndex + 1) % _visualStyles.length;
     _visualDescriptionController.clear();
     
-  });
-  _generateAvatar();
+    });
+    _generateAvatar();
   }
 
 
-  
   Future<void> _createCharacter() async {
-  if (_nameController.text.trim().isEmpty) {
+    if (_nameController.text.trim().isEmpty) {
     _showError('Введите имя персонажа');
     return;
-  }
+    }
 
-  if (_backstoryController.text.trim().isEmpty) {
+    if (_backstoryController.text.trim().isEmpty) {
     _showError('Напишите предысторию');
     return;
-  }
-
-  setState(() => _isGenerating = true);
-  try {
-    final visualStyle = _visualStyles[_selectedStyleIndex]['name']!;
-    final api = ApiService();
-    Map<String, dynamic> result;
-    
-    final characterData = {
-      'name': _nameController.text,
-      'visual_style': final visualStyle = _isCustomMode ? _customStyleController.text.trim() : _visualStyles[_selectedStyleIndex]['name']!;,
-      'visual_description': _visualDescriptionController.text,
-      'backstory': _backstoryController.text,
-      'use_lore': _useLoreBasedStory,
-      'skills': [
-        {'name': _ability1, 'description': _ability1Desc},
-        {'name': _ability2, 'description': _ability2Desc},
-      ],
-      'achievements': [
-        {'name': _achievement1, 'description': _achievement1Desc},
-        {'name': _achievement2, 'description': _achievement2Desc},
-      ],
-    };
-
-    if (_needRegenerateWorld) {
-      result = await api.generateWorld(characterData);
-    } else {
-      result = await api.updateCharacter(characterData);
-      _needRegenerateWorld = true;
     }
 
-    final worldId = result['world_id'];
-    final character = Character(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      worldId: worldId,
-      name: characterData['name'],
-      visualStyle: characterData['visual_style'],
-      backstory: characterData['backstory'],
-      visualDescription: characterData['visual_description'],
-      avatarUrl: _generatedAvatarUrl.isEmpty ? null : _generatedAvatarUrl,
-      createdAt: DateTime.now(),
-      useLoreBasedStory: characterData['use_lore'],
-      skills: characterData['skills'],
-      achievements: characterData['achievements'],
-    );
+    setState(() => _isGenerating = true);
+    try {
+      final visualStyle = _isCustomMode ? _customStyleController.text.trim() : _visualStyles[_selectedStyleIndex]['name']!;
+      final api = ApiService();
+      Map<String, dynamic> result;
+      
+      final characterData = {
+        'name': _nameController.text,
+        'visual_style': visualStyle,
+        'visual_description': _visualDescriptionController.text,
+        'backstory': _backstoryController.text,
+        'use_lore': _useLoreBasedStory,
+        'skills': [
+          {'name': _ability1, 'description': _ability1Desc},
+          {'name': _ability2, 'description': _ability2Desc},
+        ],
+        'achievements': [
+          {'name': _achievement1, 'description': _achievement1Desc},
+          {'name': _achievement2, 'description': _achievement2Desc},
+        ],
+        };
 
-    await context.read<CharacterProvider>().addCharacter(character);
+      if (_needRegenerateWorld) {
+        result = await api.generateWorld(characterTemplate: characterData);
+      } else {
+        result = await api.updateCharacter(characterTemplate: characterData);
+        _needRegenerateWorld = true;
+      }
 
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CharacterSelectScreen(),
-        ),
+      final worldId = result['world_id'];
+      final character = Character(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: characterData['name'] as String ,
+        visualStyle: characterData['visual_style'] as String,
+        backstory: characterData['backstory'] as String,
+        visualDescription: characterData['visual_description'] as String,
+        avatarUrl: _generatedAvatarUrl.isEmpty ? null : _generatedAvatarUrl,
+        skills: (characterData['skills'] as List?)?.cast<Map<String, String>>() ?? [],
+        achievements: (characterData['achievements'] as List?)?.cast<Map<String, String>>() ?? [],
       );
-    }
-  } catch (e) {
+
+      await context.read<CharacterProvider>().addCharacter(character);
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CharacterSelectScreen(),
+          ),
+        );
+      }
+    } 
+    catch (e) {
     _showError(e.toString());
-  } finally {
-    if (mounted) setState(() => _isGenerating = false);
+    } 
+    finally {
+      if (mounted) setState(() => _isGenerating = false);
   }
-}
+  
 
-
-Widget _buildStyleChip({
+ Widget _buildStyleChip({
     required int index,
     required String name,
     required String icon,
@@ -271,9 +269,9 @@ Widget _buildStyleChip({
       shape: StadiumBorder(side: BorderSide(color: isSelected ? const Color(0xFFFBBF24) : const Color(0xFF3D444D))),
     );
   }
-}
+ }
  @override
-Widget build(BuildContext context) {
+  Widget build(BuildContext context) {
   if (_isGenerating) {
     return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
@@ -420,8 +418,10 @@ Widget build(BuildContext context) {
                   children: [
                     Checkbox(
                       value: _useLoreBasedStory,
-                      onChanged: (value) => setState(() => _useLoreBasedStory = value ?? false;  _needRegenerateWorld = true;),
-                      activeColor: const Color(0xFFFBBF24),
+                      onChanged: (value) => setState(() {
+                      _useLoreBasedStory = value ?? false;
+                      _needRegenerateWorld = true;
+                    }),activeColor: const Color(0xFFFBBF24),
                     ),
                     const Expanded(child: Text('Сюжет на основе лора персонажа', style: TextStyle(color: Color(0xFFE6EDF3)))),
                   ],
@@ -619,57 +619,7 @@ Widget build(BuildContext context) {
   );
 }
 
-  {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: MediaQuery.of(context).size.width * 0.4,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Название', style: TextStyle(color: Color(0xFF8B949E), fontSize: 12)),
-              const SizedBox(height: 4),
-              TextField(
-                controller: nameController,
-                onChanged: onNameChanged,
-                style: const TextStyle(color: Color(0xFFE6EDF3)),
-                decoration: InputDecoration(
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                  border: InputBorder.none,
-                  hintText: nameHint,
-                  hintStyle: const TextStyle(color: Color(0xFF8B949E), fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Описание', style: TextStyle(color: Color(0xFF8B949E), fontSize: 12)),
-              const SizedBox(height: 4),
-              TextField(
-                controller: descController,
-                onChanged: onDescChanged,
-                style: const TextStyle(color: Color(0xFFE6EDF3)),
-                decoration: InputDecoration(
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                  border: InputBorder.none,
-                  hintText: descHint,
-                  hintStyle: const TextStyle(color: Color(0xFF8B949E), fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+ 
 
   Widget _buildStyleChip({
     required int index,
