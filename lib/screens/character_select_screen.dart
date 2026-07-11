@@ -3,9 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/character_provider.dart';
 import '../models/character.dart';
 import 'create_character_screen.dart';
-import '../widgets/character_form_widgets.dart';
-
-
+import '../widgets/character_select_widgets.dart';
+import 'chat_screen.dart';
 
 class CharacterSelectScreen extends StatelessWidget {
   const CharacterSelectScreen({super.key});
@@ -19,8 +18,9 @@ class CharacterSelectScreen extends StatelessWidget {
 
   void _startGame(BuildContext context, Character character, CharacterProvider provider) {
     provider.setCurrentCharacter(character);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Чат скоро будет')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ChatScreen()),
     );
   }
 
@@ -67,26 +67,8 @@ class CharacterSelectScreen extends StatelessWidget {
           final characters = provider.characters;
 
           if (characters.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Нет созданных персонажей',
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => _createNewCharacter(context),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      textStyle: const TextStyle(fontSize: 18),
-                      minimumSize: const Size(200, 48),
-                    ),
-                    child: const Text('Создать персонажа'),
-                  ),
-                ],
-              ),
+            return EmptyCharacterList(
+              onCreatePressed: () => _createNewCharacter(context),
             );
           }
 
@@ -95,67 +77,18 @@ class CharacterSelectScreen extends StatelessWidget {
             itemCount: characters.length,
             itemBuilder: (context, index) {
               final character = characters[index];
-              return GestureDetector(
+              return CharacterCard(
+                character: character,
                 onTap: () => _startGame(context, character, provider),
-                child: Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[800],
-                            borderRadius: BorderRadius.circular(12),
-                            image: character.avatarUrl != null
-                                ? DecorationImage(
-                                    image: NetworkImage(character.avatarUrl!),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
-                          ),
-                          child: character.avatarUrl == null
-                              ? Icon(Icons.person, size: 40, color: Colors.grey[600])
-                              : null,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                character.name,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-            
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.grey),
-                          onPressed: () => _confirmDelete(context, character, provider),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                onDelete: () => _confirmDelete(context, character, provider),
               );
             },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: AddCharacterFAB(
         onPressed: () => _createNewCharacter(context),
-        child: const Icon(Icons.add),
-        backgroundColor: Colors.amber,
-        foregroundColor: Colors.black,
       ),
-    );
-  }
-}
+    );  // ← закрывает Scaffold
+  }      // ← закрывает build
+}        // ← закрывает класс

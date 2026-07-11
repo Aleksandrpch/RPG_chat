@@ -12,6 +12,7 @@ class CharacterProvider extends ChangeNotifier {
   final DatabaseService _db = DatabaseService();
 
   CharacterProvider() {
+    _db.insertDefaultCharacter();
     loadCharacters();
   }
 

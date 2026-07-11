@@ -35,6 +35,37 @@ class DatabaseService {
     _database = await _initDatabase(); // Инициализация новой БД
     return _database!;
   }
+  
+  
+  Future<void> insertDefaultCharacter() async {
+    try {
+      final db = await database;
+      
+      // Проверяем, есть ли уже персонажи
+      final count = Sqflite.firstIntValue(
+        await db.rawQuery('SELECT COUNT(*) FROM characters'),
+      ) ?? 0;
+      
+      if (count > 0) return; // если есть — пропускаем
+      
+      // Создаём базового персонажа
+      final defaultCharacter = {
+        'id': 'default_${DateTime.now().millisecondsSinceEpoch}',
+        'name': 'Странник',
+        'backstory': 'Таинственный путник, пришедший из далёких земель...',
+        'avatar_url': null,
+        'visual_style': 'Dark Fantasy',
+        'visual_description': 'Тёмный плащ, острый взгляд, старый меч за спиной.',
+      };
+      
+      await db.insert('characters', defaultCharacter);
+      print('✅ Базовый персонаж создан');
+    } 
+      catch (e) {
+        debugPrint('Error inserting default character: $e');
+      }
+  }
+
 
   // Метод инициализации базы данных
   Future<Database> _initDatabase() async {
@@ -47,6 +78,9 @@ class DatabaseService {
     // Получение пути к базе данных
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'databases.db'); // Имя файла базы данных
+
+
+
 
     // Открытие/создание базы данных
     return await openDatabase(
@@ -105,9 +139,9 @@ class DatabaseService {
         await db.execute('''
         CREATE TABLE messages(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sender_id TEXT
-        sender_name TEXT
-        sender_avatar_url TEXT
+        sender_id TEXT,
+        sender_name TEXT,
+        sender_avatar_url TEXT,
         chat_id TEXT,
         content TEXT,    
         timestamp TEXT, 
@@ -116,6 +150,7 @@ class DatabaseService {
         FOREIGN KEY (chat_id) REFERENCES chats(id)  ON DELETE CASCADE
         )
         ''');
+      
       },
     );
   }

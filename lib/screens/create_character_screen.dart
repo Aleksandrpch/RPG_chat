@@ -238,6 +238,7 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
         title: const Text('Создание персонажа'),
         centerTitle: true,
         elevation: 0,
+        scrolledUnderElevation: 0,    
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
