@@ -1,57 +1,33 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from services.llm.story_generator.world_gen import WorldGenerator
 from core.postgredatabase import *
-
-'''@router.get("/world/{world_id}/characters")
-async def get_characters(world_id: str):
-    # Загружаем story.json (потом из БД)
-    with open("story.json", "r", encoding="utf-8") as f:
-        data = json.load(f)
-    return {"characters": data.get("characters", [])}'''
-
-
-'''@router.post("/world/{world_id}/character/generate")
-async def generate_character(
-    character_template: dict,  # ← JSON от Flutter
-    background_tasks: BackgroundTasks
-):
-    world = await db.get_world(world_id)
-    
-    generator = CharacterGenerator()
-    new_character = await generator.generate_for_world(
-        world_skeleton=world['skeleton'],
-        user_character_json=character_template
-    )
-    
-    return new_character'''
+from fastapi import APIRouter
+from app.services.game_orchestrator import GameOrchestrator
+from app.models.schemas import (
+    CreateWorldRequest,
+    CreateWorldResponse,
+    RegenerateWorldRequest,
+    ChatRequest,
+    ChatResponse,
+)
 
 
-@router.post("")
 
+router = APIRouter()
+world_service = WorldService()
+orchestrator = GameOrchestrator()
 
-@router.post("/create_world")
-async def create_world_id(
-     character_data: dict, 
-):
-    world_id=DateTime.now().microsecondsSinceEpoch.toString()
-    try:
-        gen=WorldGenerator()
-        world_skelet=await gen(character_data)   # В будущем сделать цикл из агентов чтобы проверять мир
-        character= world_skelet.get("main_character")
-        db=save_world
-        await db.save_world(world_id,world_skelet )
-        return {
-            "world_id": world_id,
-            "character": character
-        }
-    except: 
-        print("Ошибка в '/create_world'")
+# Создание skelet
+@router.post("/world/create", response_model=CreateWorldResponse)
+async def create_world(request: CreateWorldRequest) -> CreateWorldResponse:
+    return await world_service.create_world(request)
 
-@router.put("/character/update")
-async def update_character(world_id:str, character_data: dict):
-    world_skelet=await get_world(world_id) # Метод из postgresdatabase получает скелет мира из db
-    if not world_skeleton:
-        raise HTTPException(404, "World not found")
-    world_skelet["main_character"].update(character_data)
-    await save_world(world_id, world_skelet)    # Метод из postgresdatabase сохраняет в db
-    
+# нужен когда пользователь поменял незначительные поля  и чтобы не переделывать весь скелет
+@router.put("/skelet/update", response_model=CreateWorldResponse)
+async def regenerate_world(request: RegenerateWorldRequest,) -> CreateWorldResponse:
+    return await world_service.regenerate(request)
+
+# главный роут ответ  ллм котоырй летит в чат потом
+@router.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest) -> ChatResponse:
+    return await orchestrator.process_turn(request)

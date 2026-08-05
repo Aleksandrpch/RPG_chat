@@ -1,47 +1,99 @@
-from pydantic import BaseModel 
-from typing import List,Dict, Optional
-from datetime import datetime 
-
-# 1. СОСТОЯНИЕ ПЕРСОНАЖА (для RAG и логики)
-
-class CharacterState(BaseModel): 
-    character_id: str 
-    world_id: str 
-    current_region:str     #region_1, region_2...
-    current_location:str  #loc_1_1, loc_2_2...
-
-    # Сюжетно важные вещи 
-
-    injures: List[str] = [] 
-    inventory: List[str] = [] 
-    completed_quests: List[str] = []
-    active_quests: List[str] = []
-    relations: Dict[str, int] = {}  # npc_id → -5..5
-
-    updated_at: datetime = datetime.now()
+from datetime import datetime, timezone
+from typing import Any
+from enum import Enum
+from pydantic import BaseModel, Field
 
 
-# 2 ДИНАМИЧЕСКОЕ СОСТОЯНИЕ МИРА (для RAG)
+
+# ============================================================
+# СОСТОЯНИЕ ПЕРСОНАЖА
+# ============================================================
+class CharacterState(BaseModel):
+    character_id: str
+    chat_id: str
+
+    state: dict[str, Any] = Field(default_factory=dict)
+
+    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+
+# ============================================================
+# СОСТОЯНИЕ МИРА
+# ============================================================
+
 class WorldState(BaseModel):
-    world_id: str
+    chat_id: str
+
+    state: dict[str, Any] = Field(default_factory=dict)
+
+    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+
+
+# ============================================================
+# СОБЫТИЯ (RAG + история)
+# ============================================================
+
+class EventState(BaseModel):
+
+    class EventType(str, Enum):
+        DIALOG = "dialog"
+        COMBAT = "combat"
+        WORLD_CHANGE = "world_change"
+        DISCOVERY = "discovery"
+        ITEM = "item"
+        SYSTEM = "system"
+
+    id: int | None = None
+
+    chat_id: str
+
+    character_id: str | None = None
+
     
-    # Где находятся ключевые NPC (если перемещаются)
-    npc_positions: Dict[str, str] = {}  # npc_id → location_id
 
-    # Состояние важных объектов (разрушен, построен, горит)
-    objects_state: Dict[str, str] = {}  # object_id → состояние
+    importance: int = 5
 
-    # Репутация игрока у фракций
-    player_reputation: Dict[str, int] = {}  # faction_id → -10..10
+    summary: str
+
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+
+
+class ChatRequest(BaseModel):
+    chat_id: str
+    content: str
+
+
+class ChatResponse(BaseModel):
+    answers: list[MessageResponse]
     
-    updated_at: datetime = datetime.now()
+
+class MessageResponse(BaseModel):
+    sender_id: str
+    sender_name: str
+    sender_avatar_url: str | None = None
+    content: str
+    timestamp: datetime
 
 
-class WorldEvent(BaseModel):
-    id: Optional[int]
-    world_id: str
-    character_id: Optional[str]
-    event_type: str  # "combat", "dialog", "discovery", "quest"
-    summary: str     # краткое описание для RAG
-    data: Dict       # полные детали
-    created_at: datetime = datetime.now()
+
+class CharacterSchema(BaseModel):
+    id: str
+    name: str
+    backstory: str
+    avatar_url: str | None = None
+    visual_style: str | None = None
+    visual_description: str
+    skills: list[dict]
+    achievements: list[dict]
+
+
+class CreateWorldRequest(BaseModel):
+    character: CharacterSchema
+
+
+class CreateWorldResponse(BaseModel):
+    chat_id: str
+    character: CharacterSchema
+
+

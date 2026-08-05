@@ -16,7 +16,7 @@ async def save_world(world_id: str, skeleton: dict):
     skeleton_json=json.dumps(skeleton)
     try:
         await conn.execute("""
-            INSERT INTO worlds (world_id, skeleton) 
+            INSERT INTO skeleton (world_id, skelet) 
             VALUES ($1, $2) 
             ON CONFLICT (world_id) 
             DO UPDATE SET skeleton = EXCLUDED.skeleton
@@ -29,7 +29,7 @@ async def get_world(world_id: str) -> dict:
     conn = await get_db()
     try:
         row = await conn.fetchrow(
-            "SELECT skeleton FROM worlds WHERE world_id = $1",
+            "SELECT skeleton FROM s WHERE world_id = $1",
             world_id
         )
         return dict(row['skeleton']) if row else None

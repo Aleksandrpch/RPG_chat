@@ -198,7 +198,7 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
 
       if (_needRegenerateWorld) {
         result = await api.generateWorld(characterTemplate: characterData);
-      } else {
+      } else { // пользователь поменял незначительные поля
         result = await api.updateCharacter(characterTemplate: characterData);
         _needRegenerateWorld = true;
       }

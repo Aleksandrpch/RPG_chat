@@ -126,7 +126,6 @@ class DatabaseService {
          
         // Таблица chats
         await db.execute('''
-       
         CREATE TABLE chats(
         id TEXT PRIMARY KEY,
         character_id TEXT,

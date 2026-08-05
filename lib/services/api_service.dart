@@ -25,7 +25,7 @@ class ApiService {
     required Map<String, dynamic> characterTemplate,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl//character/update'),
+      Uri.parse('$baseUrl/world/regenerate'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(characterTemplate),
     );
