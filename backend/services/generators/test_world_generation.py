@@ -1,6 +1,6 @@
 import asyncio
 import json
-from services.llm.story_generator.world_gen import WorldGenerator
+from services.Generators.story_generator.world_gen import WorldGenerator
 #cd backend
 #venv\Scripts\activate
 #python -m services.llm.story_generator.test_story_generation

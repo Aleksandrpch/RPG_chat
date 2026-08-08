@@ -177,4 +177,4 @@ class WorldGenerator:
             except json.JSONDecodeError as e2:
                 print(f"❌ Ошибка парсинга очищенного JSON: {e2}")
                 print(f"Текст: {cleaned_json_text[:500]}")
-                return {}  # ← возвращаем пустой словарь, а не None
+                raise RuntimeError("Ошибка парсинга очищенного JSON") from e

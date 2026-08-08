@@ -1,37 +1,59 @@
 import asyncpg
-import os 
+import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+DATABASE_URL = (
+    f"postgresql://{os.getenv('DB_USER')}:"
+    f"{os.getenv('DB_PASSWORD')}@"
+    f"{os.getenv('DB_HOST')}:"
+    f"{os.getenv('DB_PORT')}/"
+    f"{os.getenv('DB_NAME')}"
+)
 
-async def get_db():
-    """Создаёт и возвращает соединение с БД"""
-    conn = await asyncpg.connect(DATABASE_URL)
-    return conn
+pool: asyncpg.Pool | None = None
 
-async def save_world(world_id: str, skeleton: dict):
-    conn = await get_db()
-    skeleton_json=json.dumps(skeleton)
-    try:
-        await conn.execute("""
-            INSERT INTO skeleton (world_id, skelet) 
-            VALUES ($1, $2) 
-            ON CONFLICT (world_id) 
-            DO UPDATE SET skeleton = EXCLUDED.skeleton
-        """, world_id, skeleton_json)
-    finally:
-        await conn.close()
 
-async def get_world(world_id: str) -> dict:
-    """Получает скелет мира из БД"""
-    conn = await get_db()
-    try:
+async def init_db():
+    global pool
+
+    pool = await asyncpg.create_pool(
+        DATABASE_URL,
+        min_size=2,
+        max_size=10,
+    )
+
+
+async def close_db():
+    if pool:
+        await pool.close()
+
+
+async def get_skeleton(skeleton_id: str) -> dict | None:
+    async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT skeleton FROM s WHERE world_id = $1",
-            world_id
+            """
+            SELECT skeleton
+            FROM skeleton
+            WHERE id = $1
+            """,
+            skeleton_id,
         )
-        return dict(row['skeleton']) if row else None
-    finally:
-        await conn.close()
+
+        return dict(row["skeleton"]) if row else None
+
+
+async def save_skeleton(skeleton_id: str, skelet: dict) -> None:
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO skeleton (id, skelet)
+            VALUES ($1, $2::jsonb)
+            ON CONFLICT (id)
+            DO UPDATE SET skelet = EXCLUDED.skelet
+            """,
+            skeleton_id,
+            skelet,
+        )
