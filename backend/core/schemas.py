@@ -97,3 +97,6 @@ class CreateWorldResponse(BaseModel):
     character: CharacterSchema
 
 
+class UpdateSkeletonRequest(BaseModel): 
+    skeleton_id: str
+    character: CharacterSchema

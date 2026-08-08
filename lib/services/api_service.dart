@@ -9,7 +9,7 @@ class ApiService {
     }) 
     async {
     final response = await http.post(
-      Uri.parse('$baseUrl/create_world'),
+      Uri.parse('$baseUrl/world/create"'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(characterTemplate),
     );
@@ -25,7 +25,7 @@ class ApiService {
     required Map<String, dynamic> characterTemplate,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/world/regenerate'),
+      Uri.parse('$baseUrl/skeleton/update'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(characterTemplate),
     );
