@@ -53,7 +53,7 @@ class StateGenerator:
 
         #tools=self.tools,
         
-        input = f"жем со следующими параметрами: {question} если параметров нет, то сделай мир с главным персонажем с глубоким сюжетом. Верни только json",
+        input = f"  Верни только json",
     
         
         #max_output_tokens=self.config.MAX_TOKENS,
