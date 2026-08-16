@@ -160,7 +160,7 @@ class WorldGenerator:
             return result_data  # ← ГЛАВНОЕ: возвращаем результат
             
         except (json.JSONDecodeError, KeyError) as e:
-            print(f"❌ Ошибка парсинга JSON: {e}")
+            print(f"❌ Ошибка парсинга gJSON: {e}")
             generated_text = response.output_text
             print(f"Ответ модели (первые 500 символов): {generated_text[:500] if generated_text else 'None'}")
             
