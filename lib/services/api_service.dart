@@ -37,4 +37,26 @@ class ApiService {
     }
   }
   
+
+  Future<Map<String, dynamic>> sendMessage({
+    required String chatId,
+    required String content,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/chat'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'chat_id': chatId,
+        'content': content,
+    }),
+  );
+  
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  } else {
+    throw Exception('Failed to send message: ${response.body}');
+    }
+  }
+
+
 }

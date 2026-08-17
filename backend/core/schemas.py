@@ -11,9 +11,7 @@ from pydantic import BaseModel, Field
 class CharacterState(BaseModel):
     character_id: str
     chat_id: str
-
     state: dict[str, Any] = Field(default_factory=dict)
-
     updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
 
 # ============================================================
@@ -22,9 +20,7 @@ class CharacterState(BaseModel):
 
 class WorldState(BaseModel):
     chat_id: str
-
     state: dict[str, Any] = Field(default_factory=dict)
-
     updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
 
 
@@ -43,19 +39,11 @@ class EventState(BaseModel):
         SYSTEM = "system"
 
     id: int | None = None
-
     chat_id: str
-
     character_id: str | None = None
-
-    
-
     importance: int = 5
-
     summary: str
-
     payload: dict[str, Any] = Field(default_factory=dict)
-
     created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
 
 
@@ -68,13 +56,21 @@ class ChatResponse(BaseModel):
     answers: list[MessageResponse]
     
 
+class ChatSchema(BaseModel):
+    character_id: str
+    skeleton_id: str
+    name: str | None = None
+    created_at: datetime | None = None
+    last_played: datetime | None = None
+
+
 class MessageResponse(BaseModel):
     sender_id: str
     sender_name: str
+    sender_type : str
     sender_avatar_url: str | None = None
     content: str
     timestamp: datetime
-
 
 
 class CharacterSchema(BaseModel):
