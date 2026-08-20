@@ -34,19 +34,6 @@ async def create_world(request: CreateWorldRequest) -> FillMissingResponse:
     return await chat_service.create_skeletforfillmising(request)
 
 
-# нужен когда пользователь поменял незначительные поля  и чтобы не переделывать весь скелет
-@router.put("/skeleton/update")
-async def update_skeleton(request: UpdateSkeletonRequest):
-    skeleton = await chat_service.get_skeleton(request.skeleton_id)
-    if not skeleton:
-        raise HTTPException(404, "Skeleton not found")
-    skeleton["main_character"].update(request.character.model_dump())
-    await chat_service.save_skeleton(
-        request.skeleton_id,
-        skeleton,
-    )
-    return skeleton
-
 # главный роут ответ  ллм который летит в чат потом
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest) -> ChatResponse:

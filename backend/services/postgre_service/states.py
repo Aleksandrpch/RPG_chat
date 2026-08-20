@@ -22,7 +22,7 @@ async def save_character_state( schema: CharacterState):
         async with pool.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO character_states (character_id, world_id, state, updated_at)
+                INSERT INTO character_states (character_id, chat_id, state, updated_at)
                 VALUES ($1, $2, $3, NOW())
                 ON CONFLICT (character_id)
                 DO UPDATE SET state = $3, updated_at = NOW()
@@ -33,28 +33,28 @@ async def save_character_state( schema: CharacterState):
             )
 
     # 2. РАБОТА С МИРОМ
-async def get_world_state( world_id: str) -> WorldState:
+async def get_world_state( chat_id: str) -> WorldState:
         pool=get_pool()
         async with pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT state FROM world_states WHERE world_id = $1",
-                world_id
+                "SELECT state FROM world_states WHERE chat_id = $1",
+                chat_id
             )
             if row:
                 return WorldState(**row['state'])
-            raise ValueError(f"WorldState {world_id} not found")
+            raise ValueError(f"WorldState {chat_id} not found")
 
 async def save_world_state(self, schema: WorldState):
         pool=get_pool()
         async with pool.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO world_states (world_id, state, updated_at)
+                INSERT INTO world_states (chat_id, state, updated_at)
                 VALUES ($1, $2, NOW())
-                ON CONFLICT (world_id)
+                ON CONFLICT (chat_id)
                 DO UPDATE SET state = $2, updated_at = NOW()
                 """,
-                schema.world_id,
+                schema.chat_id,
                 json.dumps(schema.model_dump())
             )
 
@@ -64,10 +64,10 @@ async def add_event(self, event: WorldEvent):
         async with pool.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO world_events (world_id, character_id, event_type, summary, data, created_at)
+                INSERT INTO world_events (chat_id, character_id, event_type, summary, data, created_at)
                 VALUES ($1, $2, $3, $4, $5, NOW())
                 """,
-                event.world_id,
+                event.chat_id,
                 event.character_id,
                 event.event_type,
                 event.summary,

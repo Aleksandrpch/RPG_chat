@@ -28,5 +28,5 @@ async def save_skeleton(skelet: dict) -> None:
             DO UPDATE SET skelet = EXCLUDED.skelet
             """,
             skelet,
-        )
+        ) 
     return row['id']

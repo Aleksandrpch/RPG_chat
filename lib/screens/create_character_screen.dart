@@ -211,7 +211,48 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
       _isGenerating = false;
     });
   }
-  ///Future:  УДалить можно
+
+
+
+  /// Сохраняет персонажа, его навыки, достижения и чат в локальную БД.
+  Future<void> _saveCharacterWithRelations({
+    required Character character,
+    required String chatId,
+    required String skeletonId,
+    required String chatName,
+  }) async {
+    final db = DatabaseService();
+
+    // 1. Сохраняем персонажа
+    await db.insertCharacter(character);
+
+    // 2. Сохраняем чат
+    await db.insertChat(
+      id: chatId,
+      characterId: character.id,
+      skeletonId: skeletonId,
+      name: chatName,
+    );
+
+    // 3. Сохраняем навыки
+    for (var skill in character.skills) {
+      await db.insertSkill(
+        character.id,
+        skill['name'] ?? '',
+        skill['description'] ?? '',
+      );
+    }
+
+    // 4. Сохраняем достижения
+    for (var achievement in character.achievements) {
+      await db.insertAchievement(
+        character.id,
+        achievement['name'] ?? '',
+        achievement['description'] ?? '',
+      );
+    }
+  }
+  ///Future:  Меняет стиль, очищает описание, генерирует новый аватар
   void _regenerateCharacter() {
     setState(() {
       _generatedAvatarUrl = '';
@@ -283,6 +324,7 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
           {'name': _achievement2, 'description': _achievement2Desc},
         ],
       };
+      final db = DatabaseService();
       //Future: обработать логику когда пользователь сгенерировал случайно ин ичего не трогал зачем update делать
       //Future: обработат ьслучай когда все поля заполнены и жмут заполнить случайно
       // ИНВерсивная логика для _needRegenerateWorld по умолчанию true если случайное заполнение то false или 
@@ -293,6 +335,8 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
           characterTemplate: characterData
           skelet: null,
           );
+        // Сохраняем инфу в локальную бд
+        _saveCharacterWithRelations()
       }else if (_needUpdateCharacter) {
         // Изменились незначительные поля → обновляем персонажа в скелете(и передаем его) и создаем мир
         _updateDraftFromFields();
@@ -303,6 +347,8 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
         _needUpdateCharacter = false; 
         _needRegenerateWorld = true;
         _draft= null;
+        // Сохраняем инфу в локальную бд
+        _saveCharacterWithRelations()
       }else { 
         //Ничего не менялось → просто финализируем черновик
         // пользователь не поменял незначительные
@@ -311,6 +357,8 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
           skelet: _draft!['skelet'],
         );
         _draft = null;
+       // Сохраняем инфу в локальную бд
+        _saveCharacterWithRelations()
       }
 
       final character = Character(

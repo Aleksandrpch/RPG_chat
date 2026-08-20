@@ -129,7 +129,7 @@ class DatabaseService {
         CREATE TABLE chats(
         id TEXT PRIMARY KEY,
         character_id TEXT,
-        world_id TEXT,       
+        skeleton_id TEXT,       
         last_played TEXT,
         name TEXT, 
         FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
@@ -155,137 +155,18 @@ class DatabaseService {
   }
 
 
- // ========== SKILLS ==========
- Future<void> insertSkill(String characterId, String name, String description) async {
-  final db = await database;
-  await db.insert(
-    'character_skills',
-    {
-      'character_id': characterId,
-      'name': name,
-      'description': description,
-    },
-    conflictAlgorithm: ConflictAlgorithm.replace,
-  );
- }
- 
+ // ============================================================
+// 1. INITIALIZATION
+// ============================================================
 
- Future<List<Map<String, String>>> getSkills(String characterId) async {
-  final db = await database;
-  final result = await db.query(
-    'character_skills',
-    where: 'character_id = ?',
-    whereArgs: [characterId],
-  );
-  return result.map((row) => {
-    'name': row['name'] as String,
-    'description': row['description'] as String,
-  }).toList();
- }
- 
+// ... (методы _initDatabase, database геттер, и т.д.)
 
-/* Возможно пригодится потом если в игре будет возможность удаления скилла или что то такое
-  Future<void> deleteSkill(String characterId, String name) async {
-  final db = await database;
-  await db.delete(
-    'character_skills',
-    where: 'character_id = ? AND name = ?',
-    whereArgs: [characterId, name],
-  );
- }*/
- 
+// ============================================================
+// 2. CHARACTERS
+// ============================================================
 
- // ========== ACHIEVEMENTS ==========
- Future<void> insertAchievement(String characterId, String name, String description) async {
-  final db = await database;
-  await db.insert(
-    'character_achievements',
-    {
-      'character_id': characterId,
-      'name': name,
-      'description': description,
-      'earned_at': DateTime.now().toIso8601String(),
-    },
-    conflictAlgorithm: ConflictAlgorithm.replace,
-  );
- }
-
-Future<List<Map<String, String>>> getAchievements(String characterId) async {
-  final db = await database;
-  final result = await db.query(
-    'character_achievements',
-    where: 'character_id = ?',
-    whereArgs: [characterId],
-  );
-  return result.map((row) => {
-    'name': row['name'] as String,
-    'description': row['description'] as String,
-  }).toList();
- }
-
-/*Аналогично со способностями может пригодиться. (репутацию можно разрушить, а серию побед прервать)
-Future<void> deleteAchievement(String characterId, String name) async {
-  final db = await database;
-  await db.delete(
-    'character_achievements',
-    where: 'character_id = ? AND name = ?',
-    whereArgs: [characterId, name],
-  );
- }*/
-
-
-  // Метод сохранения сообщения в базу данных
-  Future<void> saveMessage(ChatMessage message) async {
-    try {
-      final db = await database;
-      // Вставка данных в таблицу messages
-      await db.insert(
-        'messages',
-        {
-          'content': message.content, // Текст сообщения
-          'sender_id': message.senderId,
-          'sender_name': message.senderName,
-          'sender_avatar_url': message.senderAvatarUrl,
-          'timestamp': message.timestamp.toIso8601String(), // Временная метка
-          'chat_id' :message.chatId, //id чата
-          'tokens': message.tokens, // Количество токенов
-          'cost': message.cost, // Стоимость запроса
-        },
-        conflictAlgorithm:
-            ConflictAlgorithm.replace, // Стратегия при конфликтах
-      );
-    } catch (e) {
-      debugPrint('Error saving message: $e'); // Логирование ошибок
-    }
-  }
-
-  // Метод получения сообщений из базы данных
-  Future<List<ChatMessage>> getMessages({int limit = 50}) async {
-    try {
-      final db = await database;
-      // Запрос данных из таблицы messages
-      final List<Map<String, dynamic>> maps = await db.query(
-        'messages',
-        orderBy: 'timestamp ASC', // Сортировка по времени
-        limit: limit, // Ограничение количества записей
-      );
-      return maps.map((row) => ChatMessage.fromJson(row)).toList();
-    } catch (e) {
-      debugPrint('Error getting messages: $e'); // Логирование ошибок
-      return []; // Возврат пустого списка в случае ошибки
-    }
-  }
-
-  // Метод очистки истории сообщений
-  Future<void> clearHistory() async {
-    try {
-      final db = await database;
-      await db.delete('messages'); // Удаление всех записей из таблицы
-    } catch (e) {
-      debugPrint('Error clearing history: $e'); // Логирование ошибок
-    }
-  }
-  Future<void> insertCharacter(Character character) async {
+/// Сохраняет персонажа в локальную БД.
+Future<void> insertCharacter(Character character) async {
   try {
     final db = await database;
     await db.insert(
@@ -294,7 +175,7 @@ Future<void> deleteAchievement(String characterId, String name) async {
         'id': character.id,
         'name': character.name,
         'backstory': character.backstory,
-        'avatar_url':character.avatarUrl,
+        'avatar_url': character.avatarUrl,
         'visual_style': character.visualStyle,
         'visual_description': character.visualDescription,
       },
@@ -305,22 +186,7 @@ Future<void> deleteAchievement(String characterId, String name) async {
   }
 }
 
-// Получить все чаты
-Future<List<Chat>> getChats() async {
-  try {
-    final db = await database;
-    final maps = await db.query(
-      'chats',
-      orderBy: 'last_played DESC',
-    );
-    return maps.map((map) => Chat.fromJson(map)).toList();
-  } catch (e) {
-    debugPrint('Error getting characters: $e');
-    return [];
-  }
-}
-
-// Получить одного персонажа по ID
+/// Получить одного персонажа по ID
 Future<Character?> getCharacter(String id) async {
   try {
     final db = await database;
@@ -337,47 +203,7 @@ Future<Character?> getCharacter(String id) async {
   }
 }
 
-// Обновить время последней игры
-Future<void> updateLastPlayed(String chat_id,) async {
-  try {
-    final db = await database;
-    await db.update(
-      'chats',
-      {'last_played': DateTime.now().toIso8601String()},
-      where: 'id = ?',
-      whereArgs: [chat_id],
-    );
-  } catch (e) {
-    debugPrint('Error updating last played: $e');
-  }
-}
-
-  // Удалить персонажа
-Future<void> deleteCharacter(String id) async {
-  try {
-      final db = await database;
-      await db.delete('characters', where: 'id = ?', whereArgs: [id]);
-    } catch (e) {
-      debugPrint('Error deleting character: $e');
-    }
-  } 
-
-/// Возвращает список всех персонажей из таблицы `characters`.
-/// Без сортировки. Используется редко.
-/*Future<List<Character>> getCharacter() async {
-  try {
-    final db = await database;
-    final maps = await db.query('characters');
-    return maps.map((map) => Character.fromJson(map)).toList();
-    } catch (e) {
-    debugPrint('Error getting characters: $e');
-    return [];
-    } 
-}*/
-
-
 /// Возвращает список персонажей, отсортированных по времени последней игры(last_played)
-
 /// - Используется в CharacterProvider для отображения списка на главном экране.
 Future<List<Character>> getCharacters() async {
   try {
@@ -392,15 +218,149 @@ Future<List<Character>> getCharacters() async {
       ORDER BY ch.last_played ASC
     ''');
     
-
     for (var map in maps) {
       final lastPlayedStr = map.remove('last_played') as String?;
     }
 
     return maps.map((map) => Character.fromJson(map)).toList();
-    } catch (e) {
-      debugPrint('Error getting characters: $e');
-      return [];
+  } catch (e) {
+    debugPrint('Error getting characters: $e');
+    return [];
+  }
+}
+
+/// Удалить персонажа
+Future<void> deleteCharacter(String id) async {
+  try {
+    final db = await database;
+    await db.delete('characters', where: 'id = ?', whereArgs: [id]);
+  } catch (e) {
+    debugPrint('Error deleting character: $e');
+  }
+}
+
+// ============================================================
+// 3. SKILLS
+// ============================================================
+
+/// Сохраняет навык персонажа.
+Future<void> insertSkill(String characterId, String name, String description) async {
+  final db = await database;
+  await db.insert(
+    'character_skills',
+    {
+      'character_id': characterId,
+      'name': name,
+      'description': description,
+    },
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+}
+
+/// Получает список навыков персонажа.
+Future<List<Map<String, String>>> getSkills(String characterId) async {
+  final db = await database;
+  final result = await db.query(
+    'character_skills',
+    where: 'character_id = ?',
+    whereArgs: [characterId],
+  );
+  return result.map((row) => {
+    'name': row['name'] as String,
+    'description': row['description'] as String,
+  }).toList();
+}
+
+/* Возможно пригодится потом если в игре будет возможность удаления скилла или что то такое
+Future<void> deleteSkill(String characterId, String name) async {
+  final db = await database;
+  await db.delete(
+    'character_skills',
+    where: 'character_id = ? AND name = ?',
+    whereArgs: [characterId, name],
+  );
+}*/
+
+// ============================================================
+// 4. ACHIEVEMENTS
+// ============================================================
+
+/// Сохраняет достижение персонажа.
+Future<void> insertAchievement(String characterId, String name, String description) async {
+  final db = await database;
+  await db.insert(
+    'character_achievements',
+    {
+      'character_id': characterId,
+      'name': name,
+      'description': description,
+      'earned_at': DateTime.now().toIso8601String(),
+    },
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+}
+
+/// Получает список достижений персонажа.
+Future<List<Map<String, String>>> getAchievements(String characterId) async {
+  final db = await database;
+  final result = await db.query(
+    'character_achievements',
+    where: 'character_id = ?',
+    whereArgs: [characterId],
+  );
+  return result.map((row) => {
+    'name': row['name'] as String,
+    'description': row['description'] as String,
+  }).toList();
+}
+
+/*Аналогично со способностями может пригодиться. (репутацию можно разрушить, а серию побед прервать)
+Future<void> deleteAchievement(String characterId, String name) async {
+  final db = await database;
+  await db.delete(
+    'character_achievements',
+    where: 'character_id = ? AND name = ?',
+    whereArgs: [characterId, name],
+  );
+}*/
+
+// ============================================================
+// 5. CHATS
+// ============================================================
+
+/// Сохраняет чат в локальную БД.
+Future<void> insertChat({
+  required String id,
+  required String characterId,
+  required String skeletonId,  
+  required String name,
+}) async {
+  final db = await database;
+  await db.insert(
+    'chats',
+    {
+      'id': id,
+      'character_id': characterId,
+      'skeleton_id': skeletonId,  
+      'name': name,
+      'last_played': DateTime.now().toIso8601String(),
+    },
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+}
+
+/// Получить все чаты
+Future<List<Chat>> getChats() async {
+  try {
+    final db = await database;
+    final maps = await db.query(
+      'chats',
+      orderBy: 'last_played DESC',
+    );
+    return maps.map((map) => Chat.fromJson(map)).toList();
+  } catch (e) {
+    debugPrint('Error getting characters: $e');
+    return [];
   }
 }
 
@@ -420,6 +380,63 @@ Future<String?> getChatIdByCharacter(String characterId) async {
   return null;
 }
 
+/// Обновить время последней игры
+Future<void> updateLastPlayed(String chat_id,) async {
+  try {
+    final db = await database;
+    await db.update(
+      'chats',
+      {'last_played': DateTime.now().toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [chat_id],
+    );
+  } catch (e) {
+    debugPrint('Error updating last played: $e');
+  }
+}
+
+// ============================================================
+// 6. MESSAGES
+// ============================================================
+
+/// Метод сохранения сообщения в базу данных
+Future<void> saveMessage(ChatMessage message) async {
+  try {
+    final db = await database;
+    await db.insert(
+      'messages',
+      {
+        'content': message.content,
+        'sender_id': message.senderId,
+        'sender_name': message.senderName,
+        'sender_avatar_url': message.senderAvatarUrl,
+        'timestamp': message.timestamp.toIso8601String(),
+        'chat_id' :message.chatId,
+        'tokens': message.tokens,
+        'cost': message.cost,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  } catch (e) {
+    debugPrint('Error saving message: $e');
+  }
+}
+
+/// Метод получения сообщений из базы данных
+Future<List<ChatMessage>> getMessages({int limit = 50}) async {
+  try {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'messages',
+      orderBy: 'timestamp ASC',
+      limit: limit,
+    );
+    return maps.map((row) => ChatMessage.fromJson(row)).toList();
+  } catch (e) {
+    debugPrint('Error getting messages: $e');
+    return [];
+  }
+}
 
 /// Возвращает все сообщения для переданного chat_id.
 /// - Используется при открытии экрана чата для загрузки истории.
@@ -433,5 +450,16 @@ Future<List<Map<String, dynamic>>> getMessagesByChatId(String chatId) async {
   );
   return result;
 }
+
+/// Метод очистки истории сообщений
+Future<void> clearHistory() async {
+  try {
+    final db = await database;
+    await db.delete('messages');
+  } catch (e) {
+    debugPrint('Error clearing history: $e');
+  }
+}
+
 
 }
