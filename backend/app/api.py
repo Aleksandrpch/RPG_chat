@@ -23,6 +23,17 @@ orchestrator = GameOrchestrator()
 async def create_world(request: CreateWorldRequest) -> CreateWorldResponse:
     return await chat_service.create_world(request)
 
+
+# Создание skelet
+@router.post("/world/fill_missing", response_model=CreateWorldResponse)
+async def create_world(request: CreateWorldRequest) -> FillMissingResponse:
+    """
+    Генерирует скелет мира и состояния на основе переданных данных.
+    НЕ СОХРАНЯЕТ в БД — только возвращает для заполнения полей на фронте.
+    """
+    return await chat_service.create_skeletforfillmising(request)
+
+
 # нужен когда пользователь поменял незначительные поля  и чтобы не переделывать весь скелет
 @router.put("/skeleton/update")
 async def update_skeleton(request: UpdateSkeletonRequest):

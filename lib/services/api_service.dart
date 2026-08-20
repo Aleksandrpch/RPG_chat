@@ -20,6 +20,23 @@ class ApiService {
       throw Exception('Failed to generate world: ${response.body}');
     }
   }
+
+  Future<Map<String, dynamic>> fillmissing({
+    required Map<String, dynamic> characterTemplate,
+    }) 
+    async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/world/fill_missing"'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(characterTemplate),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to fillmissing: ${response.body}');
+    }
+  }
    
   Future<Map<String, dynamic>> updateCharacter({
     required Map<String, dynamic> characterTemplate,
@@ -33,7 +50,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('Failed to generate world: ${response.body}');
+      throw Exception('Failed to updateCharacter world: ${response.body}');
     }
   }
   

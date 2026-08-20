@@ -96,15 +96,37 @@ class ChatService:
         self.world_gen = WorldGenerator()
         self.state_gen = StateGenerator()
 
-    async def create_world(self, character_data: dict) -> dict:
+
+    async def create_skeletforfillmising(
+        self, 
+        character_data: dict,
+    ) -> dict: 
+        skelet = await self.world_gen(character_data)
+        main_char = skelet.get("main_character", {}).copy()
+
+        return {
+            "skelet": skelet,
+            "character_data": main_char,
+        }
+
+    async def create_world(
+            self, 
+            character_data: dict,
+            skelet: dict,
+            ) -> dict:
         try:
+            
             # 1. Сохраняем героя
             character_id = await create_character(character_data)
             logger.info(f"✅ Персонаж создан: {character_id}")
 
             # 2. Генерируем скелет
-            skelet = await self.world_gen(character_data)
-            logger.info("✅ Скелет сгенерирован")
+            if not skelet or not isinstance(skelet, dict):
+                logger.info("❌ Скелет пустой или невалидный")
+                skelet = await self.world_gen(character_data)
+                logger.info("✅ Скелет сгенерирован")
+            else:
+                logger.info(f"Длина скелета:{len(skelet)} генерация не нужна")
 
             # 3. Сохраняем скелет
             skeleton_id = await save_skeleton(skelet=skelet)

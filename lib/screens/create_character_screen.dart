@@ -33,6 +33,7 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
   String _achievement2Desc = '';
   bool _useLoreBasedStory = false;
   bool _needUpdateCharacter= false;
+  Map<String, dynamic>? _skelet;
   bool _needRegenerateWorld = true;
 
   final List<Map<String, String>> _visualStyles = [
@@ -119,7 +120,8 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
 
   Future<void> _fillMissingFields() async {
     final name = _nameController.text.trim();
-    setState(() => _isGenerating = true);
+    setState(() => _isGenerating = true
+    _draft = draft;);
 
     try {
       final visualStyle = _isCustomMode
@@ -127,7 +129,7 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
           : _visualStyles[_selectedStyleIndex]['name']!;
 
       final api = ApiService();
-      final result = await api.generateWorld(
+      final result = await api.fillmissing(
         characterTemplate: {
           'name': name.isEmpty ? null : name,
           'visual_style': visualStyle,
@@ -148,6 +150,7 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
       final characterData = result['character'];
 
       setState(() {
+        _skelet = result;
         if (name.isEmpty && characterData['name'] != null) {
           _nameController.text = characterData['name'];
         }
@@ -218,6 +221,34 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
     _generateAvatar();
   }
 
+  // Метод для обновления скелета перед финальным созданием 
+  //персонажа то есть если флаг needUpdateCharacter true
+  void _updateDraftFromFields() {
+  if (_draft == null) return;
+
+  final mainChar = _draft!['character_data'] as Map<String, dynamic>;
+  
+  // Обновляем поля из контроллеров
+  mainChar['name'] = _nameController.text.trim();
+  mainChar['visual_description'] = _visualDescriptionController.text.trim();
+  mainChar['visual_style'] = _isCustomMode
+      ? _customStyleController.text.trim()
+      : _visualStyles[_selectedStyleIndex]['name']!;
+  mainChar['skills'] = [
+    {'name': _ability1, 'description': _ability1Desc},
+    {'name': _ability2, 'description': _ability2Desc},
+  ];
+  mainChar['achievements'] = [
+    {'name': _achievement1, 'description': _achievement1Desc},
+    {'name': _achievement2, 'description': _achievement2Desc},
+  ];
+  mainChar['use_lore'] = _useLoreBasedStory;
+
+  // Обновляем _draft
+  _draft!['character_data'] = mainChar;
+}
+
+
   Future<void> _createCharacter() async {
     if (_nameController.text.trim().isEmpty) {
       _showError('Введите имя персонажа');
@@ -253,12 +284,33 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
         ],
       };
       //Future: обработать логику когда пользователь сгенерировал случайно ин ичего не трогал зачем update делать
-      // ИНВерсивная логика и _needRegenerateWorld по умолчанию true если случайное заполнение то false или 
+      //Future: обработат ьслучай когда все поля заполнены и жмут заполнить случайно
+      // ИНВерсивная логика для _needRegenerateWorld по умолчанию true если случайное заполнение то false или 
+      // _needUpdateCharacter по умолчанию false меняется на тру при любых измениях полей после случайного заполнения снова true 
       if (_needRegenerateWorld) {
-        result = await api.generateWorld(characterTemplate: characterData);
-      } else { // пользователь поменял незначительные поля
-        result = await api.updateCharacter(characterTemplate: characterData);
+        // Изменилась предыстория или лор → новый мир
+        result = await api.generateWorld(
+          characterTemplate: characterData
+          skelet: null,
+          );
+      }else if (_needUpdateCharacter) {
+        // Изменились незначительные поля → обновляем персонажа в скелете(и передаем его) и создаем мир
+        _updateDraftFromFields();
+        result = await api.generateWorld(
+          characterTemplate: characterData
+          skelet: _draft!['skelet'],
+        );
+        _needUpdateCharacter = false; 
         _needRegenerateWorld = true;
+        _draft= null;
+      }else { 
+        //Ничего не менялось → просто финализируем черновик
+        // пользователь не поменял незначительные
+        result = await api.generateWorld(
+          characterTemplate: characterData
+          skelet: _draft!['skelet'],
+        );
+        _draft = null;
       }
 
       final character = Character(

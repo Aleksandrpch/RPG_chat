@@ -90,6 +90,13 @@ class CreateWorldRequest(BaseModel):
 
 class CreateWorldResponse(BaseModel):
     chat_id: str
+    character_id: str
+    skeleton_id:str               
+    skelet: dict[str, Any]
+
+
+class FillMissingResponse(BaseModel):
+    skelet: dict[str, Any]
     character: CharacterSchema
 
 
