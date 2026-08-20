@@ -4,14 +4,14 @@ class Chat {
   final String characterId;
   final String worldId;
   final String? title;
-  final DateTime lastActivity;
+  final DateTime lastPlayed;
 
   Chat({
     required this.id,
     required this.characterId,
     required this.worldId,
     this.title,
-    required this.lastActivity,
+    required this.lastPlayed,
   });
 
   Map<String, dynamic> toJson() => {
@@ -19,7 +19,7 @@ class Chat {
     'character_id': characterId,
     'world_id': worldId,
     'title': title,
-    'last_activity': lastActivity.toIso8601String(),
+    'last_played': lastPlayed.toIso8601String(),
   };
 
   factory Chat.fromJson(Map<String, dynamic> json) => Chat(
@@ -27,6 +27,6 @@ class Chat {
     characterId: json['character_id'] as String,
     worldId: json['world_id'] as String,
     title: json['title'] as String?,
-    lastActivity: DateTime.parse(json['last_activity'] as String),
+    lastPlayed: DateTime.parse(json['last_played'] as String),
   );
 }

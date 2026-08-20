@@ -16,11 +16,29 @@ class CharacterSelectScreen extends StatelessWidget {
     );
   }
 
-  void _startGame(BuildContext context, Character character, CharacterProvider provider) {
-    provider.setCurrentCharacter(character);
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const ChatScreen()),
+  void _startGame(BuildContext context, Character character) async {
+  // 1. Ищем chat_id в локальной БД
+  final db = DatabaseService();
+  final chatId = await db.getChatIdByCharacter(character.id);
+
+  if (chatId == null) {
+    // Если чата нет — создаём новый (или ошибка)
+    //Future: Сделать поиск в бэке по чату 
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Чат не найден')),
+    );
+    return;
+  }
+
+  // 2. Передаём chat_id в ChatScreen
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => ChatScreen(
+        chatId: chatId,
+        character: character,
+        ),
+      ),
     );
   }
 

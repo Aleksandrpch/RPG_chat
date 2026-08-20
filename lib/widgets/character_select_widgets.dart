@@ -91,7 +91,7 @@ class CharacterCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    // можно добавить класс или время
+                    // Сюда можно чет вставить инфу про перса
                   ],
                 ),
               ),

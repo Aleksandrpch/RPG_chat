@@ -5,8 +5,12 @@ import '../widgets/chat_widgets.dart';
 import '../widgets/design_colors.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
-
+  final String chatId;
+  
+  const ChatScreen({
+    super.key,
+    required this.chatId,  // ← обязательно передавать
+  });
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
@@ -19,37 +23,74 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _messages.add({
-      'text': 'Добро пожаловать в мир приключений! Что будешь делать?',
-      'isUser': false,
-      'timestamp': DateTime.now(),
-    });
+  
+    // Загружаем историю чата из локальной БД
+    Future<void> _loadChatHistory() async {
+      final history = await _db.getMessagesByChatId(widget.chatId);
+      setState(() {
+        _messages.clear();
+        _messages.addAll(history);
+      });
+    }
   }
 
-  void _sendMessage(String text) {
-    setState(() {
-      _messages.add({
-        'text': text,
-        'isUser': true,
-        'timestamp': DateTime.now(),
-      });
-      _isLoading = true;
+  void _sendMessage(String text) async {
+  // 1. Добавляем сообщение пользователя в UI
+  setState(() {
+    _messages.add({
+      'text': text,
+      'isUser': true,
+      'timestamp': DateTime.now(),
     });
+    _isLoading = true;
+  });
+  _scrollToBottom();
 
-    Future.delayed(const Duration(seconds: 1), () {
+  try {
+    // 2. Отправляем запрос на бекенд
+    final api = ApiService();
+    final response = await api.sendMessage(
+      chatId: widget.chatId,  // ← ID чата (нужно передать в ChatScreen)
+      content: text,
+    );
+
+    // 3. Обрабатываем ответ от LLM
+    if (response['answers'] != null && response['answers'].isNotEmpty) {
+      for (var answer in response['answers']) {
+        setState(() {
+          _messages.add({
+            'text': answer['content'],
+            'isUser': false,
+            'timestamp': DateTime.parse(answer['timestamp']),
+            'senderName': answer['sender_name'],
+            'senderType': answer['sender_type'],
+          });
+        });
+      }
+    } else {
+      // fallback, если ответ пустой
       setState(() {
         _messages.add({
-          'text': 'Ты сказал: "$text". Пока это заглушка. Скоро здесь будет ИИ-генерация сюжета!',
+          'text': '🤔 Я не расслышал... Попробуй ещё раз.',
           'isUser': false,
           'timestamp': DateTime.now(),
         });
-        _isLoading = false;
-        _scrollToBottom();
+      });
+    }
+  } catch (e) {
+    // 4. Обработка ошибки
+    setState(() {
+      _messages.add({
+        'text': '❌ Ошибка: $e',
+        'isUser': false,
+        'timestamp': DateTime.now(),
       });
     });
-
+  } finally {
+    setState(() => _isLoading = false);
     _scrollToBottom();
   }
+}
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -137,7 +137,7 @@ class DatabaseService {
         ''');
         await db.execute('''
         CREATE TABLE messages(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT PRIMARY KEY,
         sender_id TEXT,
         sender_name TEXT,
         sender_avatar_url TEXT,
@@ -353,17 +353,18 @@ Future<void> updateLastPlayed(String chat_id,) async {
 }
 
   // Удалить персонажа
-  Future<void> deleteCharacter(String id) async {
-    try {
+Future<void> deleteCharacter(String id) async {
+  try {
       final db = await database;
       await db.delete('characters', where: 'id = ?', whereArgs: [id]);
     } catch (e) {
       debugPrint('Error deleting character: $e');
     }
-    } 
+  } 
 
-
-  Future<List<Character>> getCharacters() async {
+/// Возвращает список всех персонажей из таблицы `characters`.
+/// Без сортировки. Используется редко.
+/*Future<List<Character>> getCharacter() async {
   try {
     final db = await database;
     final maps = await db.query('characters');
@@ -372,5 +373,65 @@ Future<void> updateLastPlayed(String chat_id,) async {
     debugPrint('Error getting characters: $e');
     return [];
     } 
+}*/
+
+
+/// Возвращает список персонажей, отсортированных по времени последней игры(last_played)
+
+/// - Используется в CharacterProvider для отображения списка на главном экране.
+Future<List<Character>> getCharacters() async {
+  try {
+    final db = await database;
+    
+    final maps = await db.rawQuery('''
+      SELECT 
+        c.*,
+        ch.last_played as last_played
+      FROM characters c
+      LEFT JOIN chats ch ON c.id = ch.character_id
+      ORDER BY ch.last_played ASC
+    ''');
+    
+
+    for (var map in maps) {
+      final lastPlayedStr = map.remove('last_played') as String?;
+    }
+
+    return maps.map((map) => Character.fromJson(map)).toList();
+    } catch (e) {
+      debugPrint('Error getting characters: $e');
+      return [];
   }
+}
+
+/// Возвращает chat_id для переданного character_id.
+/// - Используется при переходе из списка персонажей в экран чата
+Future<String?> getChatIdByCharacter(String characterId) async {
+  final db = await database;
+  final result = await db.query(
+    'chats',
+    where: 'character_id = ?',
+    whereArgs: [characterId],
+    limit: 1,
+  );
+  if (result.isNotEmpty) {
+    return result.first['id'] as String;
+  }
+  return null;
+}
+
+
+/// Возвращает все сообщения для переданного chat_id.
+/// - Используется при открытии экрана чата для загрузки истории.
+Future<List<Map<String, dynamic>>> getMessagesByChatId(String chatId) async {
+  final db = await database;
+  final result = await db.query(
+    'messages',
+    where: 'chat_id = ?',
+    whereArgs: [chatId],
+    orderBy: 'timestamp ASC',
+  );
+  return result;
+}
+
 }

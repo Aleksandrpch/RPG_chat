@@ -32,6 +32,7 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
   String _achievement2 = '';
   String _achievement2Desc = '';
   bool _useLoreBasedStory = false;
+  bool _needUpdateCharacter= false;
   bool _needRegenerateWorld = true;
 
   final List<Map<String, String>> _visualStyles = [
@@ -48,6 +49,61 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
     _backstoryController.addListener(() {
       if (_needRegenerateWorld == false) {
         setState(() => _needRegenerateWorld = true);
+      }
+    });
+    _nameController.addListener(() {
+      if (!_needUpdateCharacter) {
+        setState(() => _needUpdateCharacter = true);
+      }
+    });
+    _visualDescriptionController.addListener(() {
+      if (!_needUpdateCharacter) {
+        setState(() => _needUpdateCharacter = true);
+      }
+    });
+    _customStyleController.addListener(() {
+      if (!_needUpdateCharacter) {
+        setState(() => _needUpdateCharacter = true);
+      }
+    });
+    _ability1.addListener(() {
+      if (!_needUpdateCharacter) {
+        setState(() => _needUpdateCharacter = true);
+      }
+    });
+    _ability2.addListener(() {
+      if (!_needUpdateCharacter) {
+        setState(() => _needUpdateCharacter = true);
+      }
+    });
+    _ability1Desc.addListener(() {
+      if (!_needUpdateCharacter) {
+        setState(() => _needUpdateCharacter = true);
+      }
+    });
+    _ability2Desc.addListener(() {
+      if (!_needUpdateCharacter) {
+        setState(() => _needUpdateCharacter = true);
+      }
+    });
+    _achievement1.addListener(() {
+      if (!_needUpdateCharacter) {
+        setState(() => _needUpdateCharacter = true);
+      }
+    });
+    _achievement2.addListener(() {
+      if (!_needUpdateCharacter) {
+        setState(() => _needUpdateCharacter = true);
+      }
+    });
+    _achievement1Desc.addListener(() {
+      if (!_needUpdateCharacter) {
+        setState(() => _needUpdateCharacter = true);
+      }
+    });
+    _achievement2Desc.addListener(() {
+      if (!_needUpdateCharacter) {
+        setState(() => _needUpdateCharacter = true);
       }
     });
   }
@@ -123,6 +179,7 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
           }
         }
         _needRegenerateWorld = false;
+        _needUpdateCharacter = false;
       });
 
       if (mounted) {
@@ -151,7 +208,7 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
       _isGenerating = false;
     });
   }
-
+  ///Future:  УДалить можно
   void _regenerateCharacter() {
     setState(() {
       _generatedAvatarUrl = '';
@@ -195,7 +252,8 @@ class _CreateCharacterScreenState extends State<CreateCharacterScreen> {
           {'name': _achievement2, 'description': _achievement2Desc},
         ],
       };
-
+      //Future: обработать логику когда пользователь сгенерировал случайно ин ичего не трогал зачем update делать
+      // ИНВерсивная логика и _needRegenerateWorld по умолчанию true если случайное заполнение то false или 
       if (_needRegenerateWorld) {
         result = await api.generateWorld(characterTemplate: characterData);
       } else { // пользователь поменял незначительные поля

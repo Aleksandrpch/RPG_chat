@@ -120,7 +120,7 @@ class ChatService:
             logger.info(f"✅ Чат создан: {chat_id}")
 
             # 5. Состояние мира
-            world_state_schema = self.state_gen(character_data)
+            world_state_schema = await self.state_gen(skelet)
             await save_world_state(chat_id=chat_id, schema=world_state_schema)
             logger.info("✅ Состояние мира сохранено")
 
