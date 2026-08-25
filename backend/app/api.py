@@ -24,7 +24,7 @@ async def create_world(request: CreateWorldRequest) -> CreateWorldResponse:
     return await chat_service.create_world(request)
 
 
-# Создание skelet
+#  Нужен для кнопки заполнить пустые поля случайно
 @router.post("/world/fill_missing", response_model=CreateWorldResponse)
 async def create_world(request: CreateWorldRequest) -> FillMissingResponse:
     """
