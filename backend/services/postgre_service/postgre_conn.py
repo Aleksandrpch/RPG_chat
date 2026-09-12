@@ -25,12 +25,14 @@ async def init_db():
             max_size=10,
         )
 
-async def get_pool(): 
+def get_pool(): 
     if pool is None:
         raise RuntimeError("Database not initialized")
     return pool
 
 
-async def close_db():
-    if pool:
+async def close_db() -> None:
+    global pool
+    if pool is not None:
         await pool.close()
+        pool = None

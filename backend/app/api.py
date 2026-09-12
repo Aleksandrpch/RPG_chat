@@ -41,4 +41,13 @@ async def chat(request: ChatRequest) -> ChatResponse:
     # 2. Вызывает оркестратор → LLM → RAG → ответ
     # 3. Сохраняет ответ LLM
     # 4. Возвращает ответ фронт
+    llm = request.app.state.orchestrator
+    
+
+    result = await orchestrator.process_turn(
+        chat_id=data.chat_id,
+        content=data.content,
+    )
+
+    return result
     return await orchestrator.process_turn(request)

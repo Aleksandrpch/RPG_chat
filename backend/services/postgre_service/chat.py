@@ -20,3 +20,20 @@ async def create_chat(chat: ChatSchema) -> str:
         )
         chat_id = row["id"]
         return chat_id
+
+async def get_chat(chat_id: str) -> ChatSchema:
+    """Возвращает информацию о чате по его ID."""
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT id, character_id, skeleton_id, name, created_at, last_played
+            FROM chat
+            WHERE id = $1
+            """,
+            chat_id,
+        )
+        if row:
+            return ChatSchema(**row)
+        else:
+            return None

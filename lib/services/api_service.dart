@@ -6,12 +6,15 @@ class ApiService {
 
   Future<Map<String, dynamic>> generateWorld({
     required Map<String, dynamic> characterTemplate,
-    }) 
-    async {
+    Map<String, dynamic>? skelet,
+  }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/world/create"'),
+      Uri.parse('$baseUrl/world/create'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(characterTemplate),
+      body: jsonEncode({
+        'character': characterTemplate,
+        'skelet': skelet,
+        }),
     );
     
     if (response.statusCode == 200) {
@@ -26,7 +29,7 @@ class ApiService {
     }) 
     async {
     final response = await http.post(
-      Uri.parse('$baseUrl/world/fill_missing"'),
+      Uri.parse('$baseUrl/world/fill_missing'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(characterTemplate),
     );

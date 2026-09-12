@@ -17,7 +17,7 @@ def clean_json_response(text: str) -> str:
 
 class StateGenerator:
 
-    def __init__(self):
+    def __init__(self, llm_connection: LLMConnection):
             self.config = Config()
             if not self.config.YANDEX_ID_KEY or not self.config.YANDEX_API_KEY:
                 raise ValueError("YANDEX_API_KEY и YANDEX_ID_KEY должны быть установлены в .env файле.")

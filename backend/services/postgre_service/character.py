@@ -45,3 +45,19 @@ async def create_character(character: CharacterSchema) -> None:
                 achievement.get("description"),
             )
     return character_id
+
+
+async def get_character_id_by_chat_id(chat_id: str) -> str:
+    """Получает character_id по chat_id"""
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT character_id FROM chat  
+            WHERE id = $1
+            """,
+            chat_id,
+        )
+        if row is None:
+            raise ValueError(f"Chat with id {chat_id} not found")
+        return row["character_id"]

@@ -1,10 +1,10 @@
 from postgre_conn import get_pool
 
 
-async def create_postgre_database():
+async def create_postgre():
     pool=get_pool()
     async with pool.acquire() as conn:
-        row = await conn.fetchrow('''
+        row = await conn.execute('''
 -- ============================================================
 -- RPG_chat Database Schema (PostgreSQL)
 -- ============================================================
@@ -179,7 +179,7 @@ CREATE TABLE IF NOT EXISTS message (
 
     sender_id TEXT NOT NULL,
 
-    sender_type TEXT NOT NULL СHECK (
+    sender_type TEXT NOT NULL CHECK (
         sender_type IN ('NPC', 'Narrator', 'Hero')
         )
 
@@ -196,6 +196,40 @@ CREATE TABLE IF NOT EXISTS message (
     cost REAL,
 
     timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+-- ============================================================
+-- 10. ВЫЗОВЫ LLM
+-- ============================================================
+
+CREATE TABLE llm_call (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    chat_id UUID REFERENCES chat(id) ON DELETE CASCADE,
+    message_id UUID REFERENCES message(id) ON DELETE SET NULL,
+
+    -- Где произошёл вызов
+    component TEXT NOT NULL,
+
+    -- Модель, которую фактически использовал API
+    model TEXT NOT NULL,
+
+    -- Usage из ответа API
+    input_tokens INTEGER NOT NULL,
+    cached_tokens INTEGER DEFAULT 0,
+
+    output_tokens INTEGER NOT NULL,
+    reasoning_tokens INTEGER DEFAULT 0,
+
+    total_tokens INTEGER NOT NULL,
+
+    -- Рассчитываем сами по актуальному тарифу
+    cost NUMERIC(12, 8),
+
+    -- Наша техническая статистика
+    latency_ms INTEGER,
+    success BOOLEAN NOT NULL DEFAULT TRUE,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================================================
@@ -224,11 +258,12 @@ CREATE INDEX IF NOT EXISTS idx_event_payload
 ON event_state
 USING GIN(payload);
 
-CREATE INDEX IF NOT EXISTS idx_world_state
-ON world_state
-USING GIN(state);
+CREATE INDEX idx_llm_call_message_id
+ON llm_call(message_id);
 
-CREATE INDEX IF NOT EXISTS idx_character_state
-ON character_state
-USING GIN(state);
+CREATE INDEX idx_llm_call_chat_created_at
+ON llm_call(chat_id, created_at DESC);
+
+CREATE INDEX idx_llm_call_component
+ON llm_call(component);
 ''')
