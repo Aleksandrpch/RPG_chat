@@ -47,7 +47,7 @@ async def create_character(character: CharacterSchema) -> None:
     return character_id
 
 
-async def get_character_id_by_chat_id(chat_id: str) -> str:
+'''async def get_character_id_by_chat_id(chat_id: str) -> str:
     """Получает character_id по chat_id"""
     pool = get_pool()
     async with pool.acquire() as conn:
@@ -60,4 +60,45 @@ async def get_character_id_by_chat_id(chat_id: str) -> str:
         )
         if row is None:
             raise ValueError(f"Chat with id {chat_id} not found")
-        return row["character_id"]
+        return row["character_id"]'''
+
+async def get_character(character_id: str) -> CharacterSchema:
+    """Возвращает информацию о персонаже по его ID."""
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT id, name, backstory, avatar_url, visual_style, visual_description
+            FROM character
+            WHERE id = $1
+            """,
+            character_id,
+        )
+        if row:
+            # Получаем навыки и достижения персонажа
+            skills = await conn.fetch(
+                """
+                SELECT name, description FROM character_skill
+                WHERE character_id = $1
+                """,
+                character_id,
+            )
+            achievements = await conn.fetch(
+                """
+                SELECT name, description FROM character_achievement
+                WHERE character_id = $1
+                """,
+                character_id,
+            )
+            return CharacterSchema(
+                id=row["id"],
+                name=row["name"],
+                backstory=row["backstory"],
+                avatar_url=row["avatar_url"],
+                visual_style=row["visual_style"],
+                visual_description=row["visual_description"],
+                skills=[dict(skill) for skill in skills],
+                achievements=[dict(achievement) for achievement in achievements],
+            )
+        else:
+            return None

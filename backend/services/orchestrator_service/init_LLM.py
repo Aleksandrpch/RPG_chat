@@ -31,5 +31,40 @@ class LLMConnection:
 
         return response
 
+
+    async def _execute_tool(
+    self,
+    tool_name: str,
+    chat_id: str,
+    args: dict,
+    ):
+        if tool_name == "search_memory":
+            return await search_memory(
+                qdrant_storage=self.qdrant_storage,
+                embedding_service=self.embedding_service,
+                chat_id=chat_id,
+                queries=args["queries"],
+            )
+
+        if tool_name == "add_achievement":
+            return await add_achievement(
+                chat_id=chat_id,
+                achievement_name=args["achievement_name"],
+                achievement_description=args[
+                    "achievement_description"
+                ],
+            )
+
+        if tool_name == "add_skill":
+            return await add_skill(
+                chat_id=chat_id,
+                skill_name=args["skill_name"],
+                skill_description=args["skill_description"],
+            )
+
+        raise ValueError(
+            f"Неизвестный tool: {tool_name}"
+        )
+
     async def close(self):
         await self.client.close()

@@ -14,12 +14,15 @@ from .tools.search_memory import (
     search_memory,
 )
 
-TOOL_SCHEMAS = [
+MAIN_TOOL_SCHEMAS = [
     ADD_ACHIEVEMENT_SCHEMA,
     ADD_SKILL_SCHEMA,
     SEARCH_INFO_SCHEMA,
 ]
 
+SEARCH_TOOL_SCHEMAS = [
+    SEARCH_INFO_SCHEMA,
+]
 TOOL_HANDLERS = {
     func.__name__: func
     for func in (

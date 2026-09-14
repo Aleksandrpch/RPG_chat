@@ -68,7 +68,7 @@ async def get_chat_history(
                 timestamp
             FROM message
             WHERE chat_id = $1
-            ORDER BY timestamp ASC
+            ORDER BY timestamp DESC
             LIMIT $2
             OFFSET $3
             """,

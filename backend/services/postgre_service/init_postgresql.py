@@ -213,6 +213,10 @@ CREATE TABLE llm_call (
     -- Модель, которую фактически использовал API
     model TEXT NOT NULL,
 
+    -- Сгенерированный текст
+    content JSONB NOT NULL DEFAULT '{}'
+
+
     -- Usage из ответа API
     input_tokens INTEGER NOT NULL,
     cached_tokens INTEGER DEFAULT 0,
