@@ -1,9 +1,13 @@
-from backend.services.postgre_service import get_character_id_by_chat_id
-from backend.services.postgre_service import add_achievement, get_achievements
+from backend.services.postgre_service import (
+    get_character_id_by_chat_id,
+    add_achievement,
+    add_skill
+)
+import logging
 
 
 
-
+logger = logging.getLogger(__name__)
 
 ADD_ACHIEVEMENT_SCHEMA = {
     "type": "function",

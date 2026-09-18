@@ -153,7 +153,7 @@ CREATE TABLE IF NOT EXISTS event_state (
 
     event_type TEXT NOT NULL,
 
-    cause_event_id UUID REFERENCES event_state(id)
+    cause_event_id UUID REFERENCES event_state(id),
 
     importance SMALLINT NOT NULL
         CHECK (importance BETWEEN 1 AND 10),

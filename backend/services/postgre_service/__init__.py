@@ -4,4 +4,5 @@ from .chat import create_chat, get_chat
 from .achievment import save_achievement, get_achievements
 from .skill import save_skill, get_skills
 from .message import save_message, get_chat_history
-from  .states import get_character_state, get_world_state
+from .states import get_character_state, get_world_state
+from .llm_call import save_llm_call

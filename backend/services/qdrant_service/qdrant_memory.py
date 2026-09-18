@@ -80,7 +80,7 @@ class QdrantMemory:
                 )
             ]
         )
-        # TODO: потом кастомизировать возвращаемый payload для экономии:
+        # todo: потом кастомизировать возвращаемый payload для экономии:
         # with_payload=[
         #     "summary",
         #     "event_id",

@@ -1,5 +1,5 @@
 import logging
-from postgres import (
+from postgre_service import (
     get_chat,
     get_chat_history, 
     get_character_state, 
@@ -7,10 +7,14 @@ from postgres import (
     save_message,
     get_skeleton,
     get_skills,
-    get_achievements
+    get_achievements,
+    save_llm_call
 )
+from time import perf_counter
+from qdrant_service  import EmbeddingService
+from qdrant_service import QdrantMemory
 from core.schemas import ChatRequest, ChatResponse
-from .tools import MAIN_TOOL_SCHEMAS,TOOL_HANDLERS, SEARCH_TOOL_SCHEMAS
+from .tools.tool_registry import MAIN_TOOL_SCHEMAS,TOOL_HANDLERS, SEARCH_TOOL_SCHEMAS
 logger = logging.getLogger(__name__)
 
 
@@ -28,8 +32,10 @@ class GameOrchestrator:
     7. Сохранение сообщений, событий и изменений state.
     """
 
-    def __init__(self, llm):
+    def __init__(self, llm,emdeding_service,qdrant_storage):
         self.llm = llm
+        self.embeding_service=emdeding_service
+        self.qdrant_storage=qdrant_storage
 
     async def _execute_tool(self, call, chat_id):
         args = json.loads(call.arguments)
@@ -56,6 +62,143 @@ class GameOrchestrator:
             )
 
         raise ValueError(f"Неизвестный инструмент: {call.name}")
+
+
+    async def _run_tool_loop(
+        self,
+        *,
+        inputs,
+        tools,
+        chat_id,
+        component: str,
+        max_rounds=5,
+    ):
+    # История и результаты принадлежат только этому вызову.
+        inputs = list(inputs)
+        tool_results = []
+        allowed_names = {tool["name"] for tool in tools}
+
+        for _ in range(max_rounds):
+            started_at = perf_counter()
+
+            response = await self.llm.generate(
+                input=inputs,
+                tools=tools,
+            )
+
+            latency_ms = round((perf_counter() - started_at) * 1000)
+
+            usage = response.usage
+
+            if usage is None:
+                raise RuntimeError("В ответе LLM отсутствует статистика токенов")
+
+            input_details = usage.input_tokens_details
+            output_details = usage.output_tokens_details
+
+            await save_llm_call(
+                chat_id=chat_id,
+                component=component,
+                model=response.model,
+                content={
+                    "response_id": response.id,
+                    "status": response.status,
+                    "output": [
+                        item.model_dump(mode="json")
+                        for item in response.output
+                    ],
+                },
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                total_tokens=usage.total_tokens,
+                cached_tokens=(
+                    getattr(input_details, "cached_tokens", 0) or 0
+                ),
+                reasoning_tokens=(
+                    getattr(output_details, "reasoning_tokens", 0) or 0
+                ),
+                latency_ms=latency_ms,
+                success=response.status == "completed",
+            )
+
+            # Ниже остаётся твой код:
+            # проверка response.status,
+            # inputs.extend(response.output),
+            # поиск function_call и выполнение tools.
+
+            if response.status != "completed":
+                raise RuntimeError(
+                    f"Модель не завершила ответ: {response.status}"
+                )
+
+            # Сохраняем все элементы для stateless-продолжения.
+            inputs.extend(response.output)
+
+            calls = [
+                item
+                for item in response.output
+                if item.type == "function_call"
+            ]
+
+            if not calls:
+                return response.output_text, tool_results
+
+            for call in calls:
+                # Поисковому этапу нельзя выдавать навыки,
+                # даже если модель неожиданно запросит этот tool.
+                if call.name not in allowed_names:
+                    result = {
+                        "status": "error",
+                        "message": "Инструмент недоступен на этом этапе",
+                    }
+                else:
+                    # Перед выполнением проверяем JSON и обязательные ключи.
+                    schema = next(
+                        tool["parameters"]
+                        for tool in tools
+                        if tool["name"] == call.name
+                    )
+
+                    try:
+                        args = json.loads(call.arguments)
+
+                        if not isinstance(args, dict):
+                            raise ValueError("Аргументы должны быть объектом")
+
+                        required = set(schema.get("required", []))
+                        allowed = set(schema.get("properties", {}))
+
+                        if required - args.keys():
+                            raise ValueError("Не хватает обязательных аргументов")
+
+                        if args.keys() - allowed:
+                            raise ValueError("Переданы неизвестные аргументы")
+
+                    except ValueError as error:
+                        result = {
+                            "status": "error",
+                            "message": str(error),
+                        }
+                    else:
+                        # Ошибки БД здесь не маскируем как успех.
+                        result = await self._execute_tool(
+                            call=call,
+                            chat_id=chat_id,
+                        )
+
+                tool_results.append({
+                    "name": call.name,
+                    "result": result,
+                })
+
+                inputs.append({
+                    "type": "function_call_output",
+                    "call_id": call.call_id,
+                    "output": json.dumps(result, ensure_ascii=False),
+                })
+
+        raise RuntimeError("Превышен лимит раундов")
+
 
     #Todo: Считать  кол во токенов в сообщения и ограничиват ьименно по токенам а не кол ву сообщений
     #Todo: подумать над тем чтобы, Добавить агента критика котоырйц будет проверять поиск и наличие нужной информации
@@ -130,10 +273,15 @@ class GameOrchestrator:
             5. Не используй вопросительный знак — он не помогает.
             6. Избегай "что произошло" — слишком размыто. Конкретизируй: "конфликт", "встреча", "сделка".
             '''
-            inputs = [
-            {"role": "system", "content": search_context},
-            {"role": "user", "content": request.content},
-            ]
+            search_summary,search_tool_results  = await self._run_tool_loop(
+                inputs=[
+                {"role": "system", "content": search_context},
+                {"role": "user", "content": request.content},
+            ],
+            tools=SEARCH_TOOL_SCHEMAS,
+            chat_id=request.chat_id,
+            component="llm_search",
+            )
 
             max_rounds = 5
             #5. Вызываем LLM SEARCH INFO
@@ -170,7 +318,15 @@ class GameOrchestrator:
             achievements = await get_achievements(chat.character_id)
             skills = await get_skills(chat.character_id)
 
-            
+            final_text, main_tool_results = await self._run_tool_loop(
+            inputs=[
+                {"role": "system", "content": context},
+                {"role": "user", "content": request.content},
+            ],
+            tools=MAIN_TOOL_SCHEMAS,
+            chat_id=request.chat_id,
+            )
+
             messages = await get_chat_history(request.chat_id,limit=50)
             # 5. Собираем контекст
             context = f'''
@@ -183,12 +339,17 @@ class GameOrchestrator:
             Навыки персонажа: {skills}
             Достижения персонажа: {achievements}
             '''
-
-            # 6. Вызываем LLM
-            main_response = await self.llm.generate(
-            input=context,
-            tools=MAIN_TOOL_SCHEMAS,  
+             # 6. Вызываем LLM
+            final_text, main_tool_results = await self._run_tool_loop(
+                inputs=[
+                    {"role": "system", "content": context},
+                    {"role": "user", "content": request.content},
+                ],
+                tools=MAIN_TOOL_SCHEMAS,
+                chat_id=request.chat_id,
             )
+           
+
 
 
             # 7. Сохраняем изменения

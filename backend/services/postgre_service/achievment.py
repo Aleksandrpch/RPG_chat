@@ -17,17 +17,24 @@ async def save_achievement(
             name,
             description,
         )
+    return {
+        "status": "created" if row is not None else "already_exists",
+        "name": name,
+    }
+    
 
 
 async def get_achievements(character_id: str) -> None:
     """Получает достижения персонажа из базы данных"""
     pool = get_pool()
     async with pool.acquire() as conn:
-        await conn.execute(
+        rows = await conn.fetch(
             """
-            SELECT * FROM character_achievement
-            WHERE character_id = $1 AND name = $2
+            SELECT id, character_id, name, description, earned_at 
+            FROM character_achievement
+            WHERE character_id = $1
+            ORDER BY earned_at DESC
             """,
             character_id,
-            
         )
+    return [dict(row) for row in rows]
