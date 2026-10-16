@@ -273,6 +273,7 @@ class GameOrchestrator:
             5. Не используй вопросительный знак — он не помогает.
             6. Избегай "что произошло" — слишком размыто. Конкретизируй: "конфликт", "встреча", "сделка".
             '''
+            #5. Вызываем LLM SEARCH INFO
             search_summary,search_tool_results  = await self._run_tool_loop(
                 inputs=[
                 {"role": "system", "content": search_context},
@@ -281,51 +282,12 @@ class GameOrchestrator:
             tools=SEARCH_TOOL_SCHEMAS,
             chat_id=request.chat_id,
             component="llm_search",
+            max_rounds = 5,
             )
-
-            max_rounds = 5
-            #5. Вызываем LLM SEARCH INFO
-            for _ in range(max_rounds):
-                llm_response = await self.llm.generate(
-                input=inputs,
-                tools=SEARCH_TOOL_SCHEMAS,  
-                )
-            
-
-                # Добавляем ответ модели целиком:
-                # вызовы tools и остальные элементы продолжения.
-                inputs.extend(llm_response.output)
-                calls = [item for item in llm_response.output if item.type == "function_call"]
-                # Модель закончила поиск.
-                if not calls:
-                    search_summary = llm_response.output_text
-                    return
-
-                for call in calls:
-                    result = await self._execute_tool(
-                        call=call,
-                        chat_id=request.chat_id,
-                    )
-
-                    inputs.append({
-                        "type": "function_call_output",
-                        "call_id": call.call_id,
-                        "output": json.dumps(result, ensure_ascii=False),
-                    })
-            else:
-                raise RuntimeError("Превышен лимит раундов поиска")
+    
 
             achievements = await get_achievements(chat.character_id)
             skills = await get_skills(chat.character_id)
-
-            final_text, main_tool_results = await self._run_tool_loop(
-            inputs=[
-                {"role": "system", "content": context},
-                {"role": "user", "content": request.content},
-            ],
-            tools=MAIN_TOOL_SCHEMAS,
-            chat_id=request.chat_id,
-            )
 
             messages = await get_chat_history(request.chat_id,limit=50)
             # 5. Собираем контекст
