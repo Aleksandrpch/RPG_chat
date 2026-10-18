@@ -1,4 +1,5 @@
 import logging
+import json
 from postgre_service import (
     get_chat,
     get_chat_history, 
@@ -15,6 +16,9 @@ from qdrant_service  import EmbeddingService
 from qdrant_service import QdrantMemory
 from core.schemas import ChatRequest, ChatResponse
 from .tools.tool_registry import MAIN_TOOL_SCHEMAS,TOOL_HANDLERS, SEARCH_TOOL_SCHEMAS
+
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,36 +36,31 @@ class GameOrchestrator:
     7. Сохранение сообщений, событий и изменений state.
     """
 
-    def __init__(self, llm,emdeding_service,qdrant_storage):
+    def __init__(self, llm,emdedding_service,qdrant_storage):
         self.llm = llm
-        self.embeding_service=emdeding_service
+        self.embedding_service=emdedding_service
         self.qdrant_storage=qdrant_storage
 
-    async def _execute_tool(self, call, chat_id):
-        args = json.loads(call.arguments)
-        if call.name == "search_memory":
-            return await search_memory(
+    async def _execute_tool(self, tool_name: str, chat_id: str, args: dict):
+        if tool_name not in TOOL_HANDLERS:
+            raise ValueError(f"Неизвестный инструмент: {tool_name}")
+           
+        handler = TOOL_HANDLERS[tool_name]
+
+        # Исключение только для search_memory, так как ему нужны базы данных (qdrant, embedding)
+        if tool_name == "search_memory":
+            return await handler(
                 qdrant_memory=self.qdrant_storage,
                 embedding_service=self.embedding_service,
                 chat_id=chat_id,
-                queries=args["queries"],
+                **args 
             )
-
-        if call.name == "add_achievement":
-            return await tool_new_achievement(
+        else:
+            # Для всех остальных инструментов (достижения, навыки и будущие)
+            return await handler(
                 chat_id=chat_id,
-                achievement_name=args["achievement_name"],
-                achievement_description=args["achievement_description"],
+                **args 
             )
-
-        if call.name == "add_skill":
-            return await tool_new_skill(
-                chat_id=chat_id,
-                skill_name=args["skill_name"],
-                skill_description=args["skill_description"],
-            )
-
-        raise ValueError(f"Неизвестный инструмент: {call.name}")
 
 
     async def _run_tool_loop(
@@ -182,8 +181,9 @@ class GameOrchestrator:
                     else:
                         # Ошибки БД здесь не маскируем как успех.
                         result = await self._execute_tool(
-                            call=call,
+                            tool_name=call.name,  # <--- Передаем имя
                             chat_id=chat_id,
+                            args=args 
                         )
 
                 tool_results.append({
@@ -309,6 +309,7 @@ class GameOrchestrator:
                 ],
                 tools=MAIN_TOOL_SCHEMAS,
                 chat_id=request.chat_id,
+                component="llm_turn",
             )
            
 

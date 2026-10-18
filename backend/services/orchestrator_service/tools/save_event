@@ -1,0 +1,71 @@
+import logging
+from postgre_service import get_chat, add_event # Импортируйте ваши функции
+from core.schemas import WorldEvent # Импорт вашей Pydantic-модели события
+
+logger = logging.getLogger(__name__)
+
+SAVE_EVENT_SCHEMA = {
+    "type": "function",
+    "name": "save_event",
+    "description": "Сохраняет атомарное событие в долговременную память мира.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "description": {
+                "type": "string",
+                "description": "Краткое описание события от третьего лица."
+            },
+            "event_type": {
+                "type": "string",
+                "enum": ["dialog", "combat", "quest", "world_change", "discovery", "item", "system","other"],
+                "description": "Тип события. discovery — Открытия и обнаружение новых сведений. Найденные секреты, скрытые проходы, разгаданные загадки, получение важной информации."
+                "system — Системные события. Переход между локациями, смена времени суток (если это важно для сюжета)."
+            },
+            "importance": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10,
+                "description": "Важность события от 1 до 10. 10 — судьбоносное вляющее на сюжет глобально (смерть короля, убийство дракона). 1 — бытовое не влияющее ни на что (разговор о погоде, покупка хлеба)."
+            },
+            "entities": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Список ключевых сущностей (имена NPC, названия локаций, предметы), которые участвуют в событии. Например: ['Король Эдвард', 'Кольцо', 'Деревня призраков']."
+            },
+            "cause_event_id": {
+                "type": "string",
+                "description": "UUID события-причины. Если связи нет, не передавай."
+            }
+        },
+        "required": ["description", "event_type", "importance", "entities"]
+    }
+}
+
+async def tool_save_event(chat_id: str, description: str, cause_event_id: str = None) -> dict:
+    try:
+        # 1. Получаем character_id (так как в таблице world_events он обязателен)
+        chat = await get_chat(chat_id)
+        
+        # 2. Создаем объект события
+        event = WorldEvent(
+            chat_id=chat_id,
+            character_id=chat.character_id,
+            event_type="action", # Можно оставить так, или LLM может это определять
+            summary=description,
+            data={}
+        )
+
+        # 3. Сохраняем в Postgres и получаем ID
+        event_id = await add_event(event, cause_event_id=cause_event_id)
+        
+        return {
+            "status": "success",
+            "event_id": event_id,
+            "message": "Событие успешно сохранено в память мира."
+        }
+    except Exception as e:
+        logger.error(f"Ошибка при сохранении события: {e}")
+        return {
+            "status": "error",
+            "message": f"Не удалось сохранить событие: {str(e)}"
+        }

@@ -22,20 +22,20 @@ class LLMConnection:
         self,
         input,
         tools=None,
-        max_output_tokens=int | None = None,
+        max_output_tokens: int | None = None,
     ):
-         params = {
-        "model": self.model,
-        "input": input,
-    }
+        params = {
+            "model": self.model,
+            "input": input,
+        }
 
-    if tools:
-        params["tools"] = tools
+        if tools:
+            params["tools"] = tools
 
-    if max_output_tokens is not None:
-        params["max_output_tokens"] = max_output_tokens
+        if max_output_tokens is not None:
+            params["max_output_tokens"] = max_output_tokens
 
-    return await self.client.responses.create(**params)
+        return await self.client.responses.create(**params)
 
 
     async def close(self):

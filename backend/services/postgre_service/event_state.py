@@ -3,6 +3,9 @@ from uuid import UUID
 from .postgre_conn import get_pool
 
 
+
+     
+
 async def get_related_events(
     *,
     chat_id: str,
@@ -96,3 +99,21 @@ async def get_related_events(
         }
         for event in found.values()
     ]
+
+
+async def add_event(self, event: WorldEvent, cause_event_id : str = None) -> str:
+        pool=get_pool()
+        async with pool.acquire() as conn:
+            event_id = await conn.fetchval(
+                """
+                INSERT INTO world_events (chat_id, character_id, event_type, summary, data, cause_event_id, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6 NOW())
+                """,
+                event.chat_id,
+                event.character_id,
+                event.event_type,
+                event.summary,
+                json.dumps(event.data),
+                cause_event_id
+            )
+            return str(event_id)
